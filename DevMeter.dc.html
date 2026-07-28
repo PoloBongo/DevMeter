@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#0a0b0d;-webkit-font-smoothing:antialiased}
+  *{box-sizing:border-box}
+  ::selection{background:rgba(62,224,138,0.25)}
+  input,select,button{font-family:inherit}
+  ::placeholder{color:#5b6168}
+</style>
+</helmet>
+
+<div style="background:#0a0b0d;min-height:100vh;font-family:'IBM Plex Sans',sans-serif;color:#e8eaed;position:relative">
+
+  <div style="position:fixed;bottom:16px;right:16px;z-index:1000;background:#15181c;border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:6px;display:flex;gap:2px;box-shadow:0 8px 24px rgba(0,0,0,0.4)">
+    <button onClick="{{ goLanding }}" style="{{ navBtnStyle_landing }}">Landing</button>
+    <button onClick="{{ goDashboard }}" style="{{ navBtnStyle_dashboard }}">Dashboard</button>
+    <button onClick="{{ goProject }}" style="{{ navBtnStyle_project }}">Project</button>
+    <button onClick="{{ goSettings }}" style="{{ navBtnStyle_settings }}">Settings</button>
+  </div>
+
+  <sc-if value="{{ isLanding }}" hint-placeholder-val="{{ true }}">
+    <div style="max-width:1160px;margin:0 auto;padding:0 32px">
+
+      <nav style="display:flex;align-items:center;justify-content:space-between;padding:28px 0">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:26px;height:26px;border-radius:6px;background:#3ee08a;display:flex;align-items:center;justify-content:center">
+            <span style="font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:14px;color:#0a0b0d">D</span>
+          </div>
+          <span style="font-weight:600;font-size:15px;letter-spacing:-0.01em">DevMeter</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:28px">
+          <span style="font-size:14px;color:#9aa0a6;cursor:pointer">Product</span>
+          <span style="font-size:14px;color:#9aa0a6;cursor:pointer">Pricing</span>
+          <span style="font-size:14px;color:#9aa0a6;cursor:pointer">Docs</span>
+          <button onClick="{{ goDashboard }}" style="background:transparent;border:none;color:#e8eaed;font-size:14px;cursor:pointer">Sign in</button>
+          <button onClick="{{ goDashboard }}" style="background:#3ee08a;border:none;color:#0a0b0d;font-size:13.5px;font-weight:600;padding:9px 16px;border-radius:7px;cursor:pointer">Start free</button>
+        </div>
+      </nav>
+
+      <section style="padding:96px 0 72px;text-align:center;display:flex;flex-direction:column;align-items:center">
+        <div style="display:inline-flex;align-items:center;gap:7px;background:rgba(62,224,138,0.1);border:1px solid rgba(62,224,138,0.25);color:#3ee08a;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:6px 12px;border-radius:20px;margin-bottom:28px">
+          <span style="width:6px;height:6px;border-radius:50%;background:#3ee08a;display:inline-block"></span>
+          Built for Claude Code freelancers
+        </div>
+        <h1 style="font-size:56px;line-height:1.08;letter-spacing:-0.03em;font-weight:600;max-width:820px;margin:0 0 22px;text-wrap:pretty">
+          Know what every ticket really costs you<span style="color:#3ee08a">.</span>
+        </h1>
+        <p style="font-size:18px;line-height:1.6;color:#9aa0a6;max-width:560px;margin:0 0 36px">
+          Time and AI included. DevMeter tracks the hours you spend and every Claude Code token you burn, per ticket, per project — automatically.
+        </p>
+        <div style="display:flex;gap:12px">
+          <button onClick="{{ goDashboard }}" style="background:#3ee08a;border:none;color:#0a0b0d;font-size:14.5px;font-weight:600;padding:13px 22px;border-radius:8px;cursor:pointer">Start tracking — 5€/mo</button>
+          <button style="background:transparent;border:1px solid rgba(255,255,255,0.14);color:#e8eaed;font-size:14.5px;font-weight:500;padding:13px 22px;border-radius:8px;cursor:pointer">See how it works</button>
+        </div>
+        <p style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5b6168;margin:18px 0 0">No card required · 2-minute setup</p>
+      </section>
+
+      <section style="padding-bottom:96px">
+        <div style="background:#111317;border:1px solid rgba(255,255,255,0.08);border-radius:14px;overflow:hidden;box-shadow:0 30px 80px -30px rgba(0,0,0,0.6)">
+          <div style="display:flex;align-items:center;gap:6px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.06)">
+            <span style="width:9px;height:9px;border-radius:50%;background:#3a3d42"></span>
+            <span style="width:9px;height:9px;border-radius:50%;background:#3a3d42"></span>
+            <span style="width:9px;height:9px;border-radius:50%;background:#3a3d42"></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#5b6168;margin-left:10px">app.devmeter.io/dashboard</span>
+          </div>
+          <div style="padding:26px;display:grid;grid-template-columns:1.1fr 1fr;gap:20px;background:#0d0f12">
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+                <sc-for list="{{ previewKpis }}" as="kpi" hint-placeholder-count="3">
+                  <div style="background:#15181c;border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px 14px">
+                    <div style="font-size:11px;color:#9aa0a6;margin-bottom:6px">{{ kpi.label }}</div>
+                    <div style="font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:600;color:{{ kpi.color }}">{{ kpi.value }}</div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="background:#15181c;border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px;flex:1">
+                <div style="font-size:11.5px;color:#9aa0a6;margin-bottom:10px">Time + AI cost — 30 days</div>
+                <svg viewBox="0 0 320 110" style="width:100%;height:88px">
+                  <polyline points="{{ previewPointsHours }}" fill="none" stroke="#4a5158" stroke-width="1.6"></polyline>
+                  <polygon points="{{ previewAreaCost }}" fill="rgba(62,224,138,0.12)"></polygon>
+                  <polyline points="{{ previewPointsCost }}" fill="none" stroke="#3ee08a" stroke-width="1.8"></polyline>
+                </svg>
+              </div>
+            </div>
+            <div style="background:#15181c;border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:6px;display:flex;flex-direction:column">
+              <sc-for list="{{ previewRows }}" as="row" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 10px;border-bottom:1px solid rgba(255,255,255,0.05)">
+                  <span style="font-size:12.5px;color:#c8cbcf">{{ row.name }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#9aa0a6">{{ row.cost }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section style="padding-bottom:110px;display:flex;flex-direction:column;align-items:center">
+        <h2 style="font-size:30px;font-weight:600;letter-spacing:-0.01em;margin:0 0 6px">Simple pricing</h2>
+        <p style="color:#9aa0a6;font-size:15px;margin:0 0 40px">One plan. Every feature. Cancel anytime.</p>
+        <div style="background:#111317;border:1px solid rgba(62,224,138,0.3);border-radius:16px;padding:36px 40px;width:340px;box-shadow:0 0 0 1px rgba(62,224,138,0.06),0 30px 60px -30px rgba(62,224,138,0.15)">
+          <div style="font-size:14px;color:#9aa0a6;margin-bottom:10px">Freelancer</div>
+          <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:24px">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:44px;font-weight:600">5€</span>
+            <span style="color:#9aa0a6;font-size:14px">/ month</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:28px">
+            <sc-for list="{{ pricingFeatures }}" as="f" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:9px;font-size:13.5px;color:#c8cbcf">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7.3L5.6 10.4L11.5 3.8" stroke="#3ee08a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                {{ f }}
+              </div>
+            </sc-for>
+          </div>
+          <button onClick="{{ goDashboard }}" style="width:100%;background:#3ee08a;border:none;color:#0a0b0d;font-size:14px;font-weight:600;padding:12px;border-radius:8px;cursor:pointer">Start free trial</button>
+        </div>
+      </section>
+
+      <section style="padding:64px 0 88px;text-align:center;border-top:1px solid rgba(255,255,255,0.06)">
+        <h2 style="font-size:28px;font-weight:600;letter-spacing:-0.01em;margin:0 0 24px">Stop guessing. Start measuring.</h2>
+        <button onClick="{{ goDashboard }}" style="background:#3ee08a;border:none;color:#0a0b0d;font-size:14.5px;font-weight:600;padding:13px 24px;border-radius:8px;cursor:pointer">Start tracking — 5€/mo</button>
+      </section>
+
+      <footer style="border-top:1px solid rgba(255,255,255,0.06);padding:24px 0;display:flex;justify-content:space-between;color:#5b6168;font-size:12.5px">
+        <span>© 2026 DevMeter</span>
+        <span style="font-family:'IBM Plex Mono',monospace">v0.1</span>
+      </footer>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isApp }}" hint-placeholder-val="{{ false }}">
+    <div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:56px;border-bottom:1px solid rgba(255,255,255,0.08);background:#0d0f12">
+        <div style="display:flex;align-items:center;gap:32px">
+          <div style="display:flex;align-items:center;gap:9px">
+            <div style="width:22px;height:22px;border-radius:5px;background:#3ee08a;display:flex;align-items:center;justify-content:center">
+              <span style="font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:12px;color:#0a0b0d">D</span>
+            </div>
+            <span style="font-weight:600;font-size:14px">DevMeter</span>
+          </div>
+          <div style="display:flex;gap:22px">
+            <span onClick="{{ goDashboard }}" style="{{ appNavStyle_dashboard }}">Dashboard</span>
+            <span onClick="{{ goSettings }}" style="{{ appNavStyle_settings }}">Settings</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#3ee08a;background:rgba(62,224,138,0.1);border:1px solid rgba(62,224,138,0.25);padding:4px 9px;border-radius:6px;display:flex;align-items:center;gap:6px">
+            <span style="width:5px;height:5px;border-radius:50%;background:#3ee08a"></span>
+            Collector active
+          </div>
+          <div style="width:28px;height:28px;border-radius:50%;background:#22262b;border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:12px;color:#c8cbcf;font-weight:600">JD</div>
+        </div>
+      </div>
+
+      <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ true }}">
+        <div style="max-width:1160px;margin:0 auto;padding:32px 28px 80px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:26px">
+            <h1 style="font-size:22px;font-weight:600;margin:0;letter-spacing:-0.01em">Dashboard</h1>
+            <button style="background:#3ee08a;border:none;color:#0a0b0d;font-size:13.5px;font-weight:600;padding:9px 16px;border-radius:7px;cursor:pointer;display:flex;align-items:center;gap:6px">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.5V11.5M1.5 6.5H11.5" stroke="#0a0b0d" stroke-width="1.6" stroke-linecap="round"></path></svg>
+              Add project
+            </button>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px">
+            <div style="background:#111317;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:18px 20px">
+              <div style="font-size:12.5px;color:#9aa0a6;margin-bottom:8px">Total time — this month</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600">{{ totalTimeMonthLabel }}</div>
+            </div>
+            <div style="background:#111317;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:18px 20px">
+              <div style="font-size:12.5px;color:#9aa0a6;margin-bottom:8px">AI cost — this month</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;color:#3ee08a">{{ totalAiCostMonthLabel }}</div>
+            </div>
+            <div style="background:#111317;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:18px 20px">
+              <div style="font-size:12.5px;color:#9aa0a6;margin-bottom:8px">Total estimated cost</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600">{{ totalCostMonthLabel }}</div>
+            </div>
+          </div>
+
+          <div style="background:#111317;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px 22px;margin-bottom:20px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+              <div style="font-size:13.5px;font-weight:500;color:#c8cbcf">Time + AI cost — last 30 days</div>
+              <div style="display:flex;gap:16px;font-size:12px;color:#9aa0a6">
+                <span style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:2px;background:#5b6168;display:inline-block"></span>Hours logged</span>
+                <span style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:2px;background:#3ee08a;display:inline-block"></span>AI cost (€)</span>
+              </div>
+            </div>
+            <svg viewBox="0 0 600 200" style="width:100%;height:200px">
+              <sc-for list="{{ gridLines }}" as="gy" hint-placeholder-count="4">
+                <line x1="0" x2="600" y1="{{ gy }}" y2="{{ gy }}" stroke="rgba(255,255,255,0.06)" stroke-width="1"></line>
+              </sc-for>
+              <polygon points="{{ areaCostPoints }}" fill="rgba(62,224,138,0.1)"></polygon>
+              <polyline points="{{ hoursPoints }}" fill="none" stroke="#5b6168" stroke-width="1.6"></polyline>
+              <polyline points="{{ costPoints }}" fill="none" stroke="#3ee08a" stroke-width="2"></polyline>
+              <text x="0" y="196" fill="#5b6168" font-size="11" font-family="IBM Plex Mono, monospace">30 days ago</text>
+              <text x="270" y="196" fill="#5b6168" font-size="11" font-family="IBM Plex Mono, monospace">15 days ago</text>
+              <text x="562" y="196" fill="#5b6168" font-size="11" font-family="IBM Plex Mono, monospace">Today</text>
+            </svg>
+          </div>
+
+          <div style="background:#111317;border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden">
+            <div style="display:grid;grid-template-columns:2.2fr 1.3fr 1fr 1fr 1fr 0.6fr;padding:12px 22px;border-bottom:1px solid rgba(255,255,255,0.07);font-size:11.5px;color:#9aa0a6;text-transform:uppercase;letter-spacing:0.04em">
+              <span>Project</span><span>Client</span><span>Time (mo.)</span><span>AI cost (mo.)</span><span>Total cost</span><span></span>
+            </div>
+            <sc-for list="{{ projects }}" as="p" hint-placeholder-count="6">
+              <div onClick="{{ p.select }}" style="display:grid;grid-template-columns:2.2fr 1.3fr 1fr 1fr 1fr 0.6fr;align-items:center;padding:15px 22px;border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer" style-hover="background:rgba(255,255,255,0.03)">
+                <div style="display:flex;flex-direction:column;gap:2px">
+                  <span style="font-size:13.5px;font-weight:500;color:#e8eaed">{{ p.name }}</span>
+                  <span style="font-size:11.5px;color:#5b6168">{{ p.lastActivity }}</span>
+                </div>
+                <span style="font-size:13px;color:#9aa0a6">{{ p.client }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:13px">{{ p.timeLabel }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#3ee08a">{{ p.aiCostLabel }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600">{{ p.totalCostLabel }}</span>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5.5 3L9.5 7L5.5 11" stroke="#5b6168" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isProject }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:1160px;margin:0 auto;padding:32px 28px 80px">
+          <div onClick="{{ goDashboard }}" style="display:flex;align-items:center;gap:6px;color:#9aa0a6;font-size:13px;cursor:pointer;margin-bottom:16px">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M8 2.5L4 6.5L8 10.5" stroke="#9aa0a6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            Dashboard
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px">
+            <div>
+              <h1 style="font-size:22px;font-weight:600;margin:0 0 4px;letter-spacing:-0.01em">{{ selectedProject.name }}</h1>
+              <span style="font-size:13px;color:#9aa0a6">{{ selectedProject.client }}</span>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px">
+            <div style="background:#111317;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px 18px">
+              <div style="font-size:12px;color:#9aa0a6;margin-bottom:7px">Total time (mo.)</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600">{{ selectedProject.timeLabel }}</div>
+            </div>
+            <div style="background:#111317;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px 18px">
+              <div style="font-size:12px;color:#9aa0a6;margin-bottom:7px">AI cost (mo.)</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;color:#3ee08a">{{ selectedProject.aiCostLabel }}</div>
+            </div>
+            <div style="background:#111317;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px 18px">
+              <div style="font-size:12px;color:#9aa0a6;margin-bottom:7px">Total cost (mo.)</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600">{{ selectedProject.totalCostLabel }}</div>
+            </div>
+            <div style="background:#111317;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px 18px">
+              <div style="font-size:12px;color:#9aa0a6;margin-bottom:7px">Sessions shown</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600">{{ sessionsCount }}</div>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+            <select style="background:#15181c;border:1px solid rgba(255,255,255,0.1);color:#e8eaed;font-size:13px;padding:8px 12px;border-radius:7px">
+              <option>Last 30 days</option>
+              <option>Last 7 days</option>
+              <option>All time</option>
+            </select>
+            <input placeholder="Search by ticket or branch…" style="background:#15181c;border:1px solid rgba(255,255,255,0.1);color:#e8eaed;font-size:13px;padding:8px 12px;border-radius:7px;width:260px"></input>
+          </div>
+
+          <div style="background:#111317;border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden">
+            <div style="display:grid;grid-template-columns:1fr 1.8fr 0.9fr 1.1fr 0.9fr;padding:12px 22px;border-bottom:1px solid rgba(255,255,255,0.07);font-size:11.5px;color:#9aa0a6;text-transform:uppercase;letter-spacing:0.04em">
+              <span>Date</span><span>Ticket / branch</span><span>Duration</span><span>Tokens</span><span>AI cost</span>
+            </div>
+            <sc-for list="{{ sessions }}" as="s" hint-placeholder-count="8">
+              <div style="display:grid;grid-template-columns:1fr 1.8fr 0.9fr 1.1fr 0.9fr;align-items:center;padding:13px 22px;border-bottom:1px solid rgba(255,255,255,0.05)">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#9aa0a6">{{ s.date }}</span>
+                <div style="display:flex;flex-direction:column;gap:3px">
+                  <span style="font-size:13px;color:#e8eaed">{{ s.ticket }}</span>
+                  <span style="display:inline-flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#5b6168;width:fit-content">
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="2.5" cy="2.5" r="1.5" stroke="#5b6168" stroke-width="1"></circle><circle cx="2.5" cy="7.5" r="1.5" stroke="#5b6168" stroke-width="1"></circle><path d="M2.5 4V6M2.5 4C2.5 5.5 7.5 5 7.5 3.5" stroke="#5b6168" stroke-width="1"></path></svg>
+                    {{ s.branch }}
+                  </span>
+                </div>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:13px">{{ s.durationLabel }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#9aa0a6">{{ s.tokensLabel }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#3ee08a">{{ s.aiCostLabel }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:720px;margin:0 auto;padding:32px 28px 80px">
+          <h1 style="font-size:22px;font-weight:600;margin:0 0 26px;letter-spacing:-0.01em">Settings</h1>
+
+          <div style="background:#111317;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:22px;margin-bottom:18px">
+            <div style="font-size:14.5px;font-weight:600;margin-bottom:4px">Local collector</div>
+            <p style="font-size:13px;color:#9aa0a6;margin:0 0 16px;line-height:1.5">Connect the DevMeter CLI on your machine to start tracking sessions automatically as you code with Claude Code.</p>
+            <div style="font-size:12px;color:#9aa0a6;margin-bottom:6px">API key</div>
+            <div style="display:flex;gap:8px;margin-bottom:16px">
+              <div style="flex:1;background:#0d0f12;border:1px solid rgba(255,255,255,0.1);border-radius:7px;padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#c8cbcf;overflow:hidden;white-space:nowrap">{{ apiKeyDisplay }}</div>
+              <button onClick="{{ toggleReveal }}" style="background:#1c2024;border:1px solid rgba(255,255,255,0.1);color:#e8eaed;font-size:12.5px;padding:0 14px;border-radius:7px;cursor:pointer">{{ revealLabel }}</button>
+              <button onClick="{{ copyKey }}" style="background:#1c2024;border:1px solid rgba(255,255,255,0.1);color:#e8eaed;font-size:12.5px;padding:0 14px;border-radius:7px;cursor:pointer;display:flex;align-items:center;gap:6px">
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="4.5" y="4.5" width="7" height="7" rx="1" stroke="#e8eaed" stroke-width="1.2"></rect><path d="M2.5 8.5V2.5C2.5 1.9 3 1.5 3.5 1.5H8.5" stroke="#e8eaed" stroke-width="1.2"></path></svg>
+                {{ copyLabel }}
+              </button>
+            </div>
+            <div style="font-size:12px;color:#9aa0a6;margin-bottom:8px">Install the collector</div>
+            <div style="background:#0d0f12;border:1px solid rgba(255,255,255,0.1);border-radius:7px;padding:12px 14px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#3ee08a">npx devmeter-cli connect --key {{ apiKeyMasked }}</div>
+          </div>
+
+          <div style="background:#111317;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:22px;margin-bottom:18px">
+            <div style="font-size:14.5px;font-weight:600;margin-bottom:4px">Hourly rate</div>
+            <p style="font-size:13px;color:#9aa0a6;margin:0 0 16px;line-height:1.5">Used to estimate total cost per project — your time × rate, plus AI spend.</p>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="display:flex;align-items:center;background:#0d0f12;border:1px solid rgba(255,255,255,0.1);border-radius:7px;overflow:hidden">
+                <span style="padding:10px 4px 10px 12px;font-family:'IBM Plex Mono',monospace;color:#9aa0a6;font-size:13px">€</span>
+                <input type="number" value="{{ hourlyRate }}" onChange="{{ onRateChange }}" style="width:90px;background:transparent;border:none;color:#e8eaed;font-family:'IBM Plex Mono',monospace;font-size:13px;padding:10px 8px 10px 0;outline:none"></input>
+                <span style="padding:10px 12px 10px 4px;color:#5b6168;font-size:12.5px">/ hour</span>
+              </div>
+              <span style="font-size:12px;color:#5b6168">Applied instantly across all projects</span>
+            </div>
+          </div>
+
+          <div style="background:#111317;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:22px">
+            <div style="font-size:14.5px;font-weight:600;margin-bottom:14px">Account</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+              <span style="font-size:13px;color:#9aa0a6">Email</span>
+              <span style="font-size:13px">jane.doe@studio.dev</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0">
+              <span style="font-size:13px;color:#9aa0a6">Plan</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#3ee08a;background:rgba(62,224,138,0.1);padding:3px 9px;border-radius:5px">Freelancer — 5€/mo</span>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:800},&quot;defaultHourlyRate&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:65,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:10,&quot;max&quot;:300,&quot;step&quot;:5,&quot;section&quot;:&quot;Behavior&quot;}}">
+class Component extends DCLogic {
+  state = { screen: 'landing', hourlyRate: undefined, selectedProjectId: 'p1', apiKeyRevealed: false, copyLabel: 'Copy' };
+  constructor(props) { super(props); this.state.hourlyRate = props.defaultHourlyRate ?? 65; }
+
+  projectsData = [
+    { id: 'p1', name: 'Checkout Redesign', client: 'Acme Corp', monthTime: 42.5, monthAiCost: 18.4, lastActivity: '2h ago' },
+    { id: 'p2', name: 'API Migration', client: 'Northwind Retail', monthTime: 31.0, monthAiCost: 24.9, lastActivity: 'Yesterday' },
+    { id: 'p3', name: 'Design System', client: 'Loop Studio', monthTime: 12.25, monthAiCost: 6.1, lastActivity: '3 days ago' },
+    { id: 'p4', name: 'Fraud Detection ML', client: 'Fintra', monthTime: 58.75, monthAiCost: 41.2, lastActivity: '1h ago' },
+    { id: 'p5', name: 'DevMeter (internal)', client: 'Internal', monthTime: 9.5, monthAiCost: 3.75, lastActivity: '5 days ago' },
+    { id: 'p6', name: 'Billing Portal', client: 'Solaris Energy', monthTime: 21.0, monthAiCost: 11.05, lastActivity: 'Today' },
+  ];
+
+  sessionsByProject = {
+    p1: [
+      { date: '2026-07-27', ticket: 'TICKET-148 — Fix checkout total rounding', branch: 'fix/checkout-total-rounding', minutes: 95, tokens: 182400, aiCost: 2.14 },
+      { date: '2026-07-26', ticket: 'TICKET-147 — Apple Pay support', branch: 'feat/apple-pay-support', minutes: 210, tokens: 412900, aiCost: 4.86 },
+      { date: '2026-07-25', ticket: 'TICKET-145 — Update Stripe SDK', branch: 'chore/update-stripe-sdk', minutes: 45, tokens: 68200, aiCost: 0.79 },
+      { date: '2026-07-24', ticket: 'TICKET-144 — Cart discount stacking', branch: 'fix/cart-discount-stacking', minutes: 130, tokens: 245100, aiCost: 2.88 },
+      { date: '2026-07-23', ticket: 'TICKET-143 — Guest checkout flow', branch: 'feat/guest-checkout-flow', minutes: 285, tokens: 501300, aiCost: 5.94 },
+      { date: '2026-07-22', ticket: 'TICKET-141 — Shipping address validation', branch: 'fix/shipping-address-validation', minutes: 60, tokens: 91700, aiCost: 1.07 },
+      { date: '2026-07-21', ticket: 'TICKET-139 — Checkout state machine refactor', branch: 'refactor/checkout-state-machine', minutes: 175, tokens: 328600, aiCost: 3.87 },
+      { date: '2026-07-19', ticket: 'TICKET-136 — Promo code case sensitivity', branch: 'fix/promo-code-case-sensitivity', minutes: 40, tokens: 52800, aiCost: 0.61 },
+    ],
+  };
+
+  chartSeries = (() => {
+    let seed = 42;
+    const rand = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+    const out = [];
+    for (let i = 0; i < 30; i++) out.push({ hours: +(1 + rand() * 6).toFixed(1), cost: +(0.4 + rand() * 4.2).toFixed(2) });
+    return out;
+  })();
+
+  fmtHours(h) { return h.toFixed(1).replace(/\.0$/, '') + 'h'; }
+  fmtEUR(v) { return v.toFixed(2) + '€'; }
+  fmtMoney(v) { return Math.round(v) + '€'; }
+  fmtDuration(min) { const h = Math.floor(min / 60), m = min % 60; return h > 0 ? `${h}h ${m.toString().padStart(2, '0')}m` : `${m}m`; }
+  fmtTokens(t) { return t.toLocaleString('en-US'); }
+
+  linePoints(values, max, step) {
+    return values.map((v, i) => `${(i * step).toFixed(1)},${(150 - (v / max) * 130).toFixed(1)}`).join(' ');
+  }
+
+  renderVals() {
+    const screen = this.state.screen;
+    const rate = this.state.hourlyRate;
+    const navBtn = (name) => `background:${screen === name ? '#3ee08a' : 'transparent'};color:${screen === name ? '#0a0b0d' : '#9aa0a6'};border:none;font-size:11.5px;font-weight:600;padding:6px 10px;border-radius:6px;cursor:pointer;font-family:'IBM Plex Mono',monospace`;
+    const appNav = (name) => `font-size:13.5px;cursor:pointer;color:${screen === name ? '#e8eaed' : '#9aa0a6'};font-weight:${screen === name ? '600' : '400'}`;
+
+    const projects = this.projectsData.map(p => ({
+      ...p,
+      timeLabel: this.fmtHours(p.monthTime),
+      aiCostLabel: this.fmtEUR(p.monthAiCost),
+      totalCostLabel: this.fmtMoney(p.monthTime * rate + p.monthAiCost),
+      select: () => this.setState({ screen: 'project', selectedProjectId: p.id }),
+    }));
+
+    const selProjectRaw = this.projectsData.find(p => p.id === this.state.selectedProjectId) || this.projectsData[0];
+    const selectedProject = {
+      ...selProjectRaw,
+      timeLabel: this.fmtHours(selProjectRaw.monthTime),
+      aiCostLabel: this.fmtEUR(selProjectRaw.monthAiCost),
+      totalCostLabel: this.fmtMoney(selProjectRaw.monthTime * rate + selProjectRaw.monthAiCost),
+    };
+
+    const sessionsRaw = this.sessionsByProject[selProjectRaw.id] || [];
+    const sessions = sessionsRaw.map(s => ({ ...s, durationLabel: this.fmtDuration(s.minutes), tokensLabel: this.fmtTokens(s.tokens), aiCostLabel: this.fmtEUR(s.aiCost) }));
+
+    const step = 600 / 29;
+    const hoursPoints = this.linePoints(this.chartSeries.map(d => d.hours), 8, step);
+    const costPoints = this.linePoints(this.chartSeries.map(d => d.cost), 6, step);
+    const areaCostPoints = costPoints + ` 600,150 0,150`;
+
+    const previewSeries = this.chartSeries.slice(0, 12);
+    const pStep = 320 / 11;
+    const previewPointsHours = previewSeries.map((d, i) => `${(i * pStep).toFixed(1)},${(90 - (d.hours / 8) * 70).toFixed(1)}`).join(' ');
+    const previewPointsCost = previewSeries.map((d, i) => `${(i * pStep).toFixed(1)},${(90 - (d.cost / 6) * 70).toFixed(1)}`).join(' ');
+    const previewAreaCost = previewPointsCost + ' 320,90 0,90';
+
+    const totalTimeMonth = this.projectsData.reduce((a, p) => a + p.monthTime, 0);
+    const totalAiCostMonth = this.projectsData.reduce((a, p) => a + p.monthAiCost, 0);
+    const totalCostMonth = this.projectsData.reduce((a, p) => a + p.monthTime * rate + p.monthAiCost, 0);
+
+    const apiKeyFull = 'dvm_live_7f2c9a1e4b6d8f3a';
+    const apiKeyMasked = 'dvm_live_••••••••3f3a';
+
+    return {
+      screen, isLanding: screen === 'landing', isApp: screen !== 'landing',
+      isDashboard: screen === 'dashboard', isProject: screen === 'project', isSettings: screen === 'settings',
+      goLanding: () => this.setState({ screen: 'landing' }),
+      goDashboard: () => this.setState({ screen: 'dashboard' }),
+      goProject: () => this.setState({ screen: 'project' }),
+      goSettings: () => this.setState({ screen: 'settings' }),
+      navBtnStyle_landing: navBtn('landing'), navBtnStyle_dashboard: navBtn('dashboard'), navBtnStyle_project: navBtn('project'), navBtnStyle_settings: navBtn('settings'),
+      appNavStyle_dashboard: appNav('dashboard'), appNavStyle_settings: appNav('settings'),
+      projects, selectedProject, sessions, sessionsCount: sessions.length,
+      totalTimeMonthLabel: this.fmtHours(totalTimeMonth), totalAiCostMonthLabel: this.fmtEUR(totalAiCostMonth), totalCostMonthLabel: this.fmtMoney(totalCostMonth),
+      hoursPoints, costPoints, areaCostPoints,
+      gridLines: [150, 112, 74, 36],
+      previewPointsHours, previewPointsCost, previewAreaCost,
+      previewKpis: [
+        { label: 'Time (mo.)', value: this.fmtHours(totalTimeMonth), color: '#e8eaed' },
+        { label: 'AI cost (mo.)', value: this.fmtEUR(totalAiCostMonth), color: '#3ee08a' },
+        { label: 'Total cost', value: this.fmtMoney(totalCostMonth), color: '#e8eaed' },
+      ],
+      previewRows: projects.slice(0, 4).map(p => ({ name: p.name, cost: p.totalCostLabel })),
+      pricingFeatures: ['Unlimited projects & clients', 'Automatic time + AI cost tracking', 'Local CLI collector', '30-day history & trends', 'Email support'],
+      hourlyRate: this.state.hourlyRate,
+      onRateChange: (e) => this.setState({ hourlyRate: Math.max(0, Number(e.target.value) || 0) }),
+      apiKeyDisplay: this.state.apiKeyRevealed ? apiKeyFull : apiKeyMasked,
+      apiKeyMasked,
+      revealLabel: this.state.apiKeyRevealed ? 'Hide' : 'Reveal',
+      toggleReveal: () => this.setState(s => ({ apiKeyRevealed: !s.apiKeyRevealed })),
+      copyLabel: this.state.copyLabel,
+      copyKey: () => { navigator.clipboard?.writeText(apiKeyFull); this.setState({ copyLabel: 'Copied!' }); setTimeout(() => this.setState({ copyLabel: 'Copy' }), 1500); },
+    };
+  }
+}
+
+</script>
+</body>
+</html>
