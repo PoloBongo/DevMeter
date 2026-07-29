@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { auth, signOutAction } from "@/lib/auth";
 import { NavLinks } from "@/components/nav-links";
 import { ToastProvider } from "@/components/toast-provider";
 
@@ -31,11 +31,21 @@ export default async function AppLayout({
             </Link>
             <NavLinks />
           </div>
-          <div
-            className="flex h-7 w-7 items-center justify-center rounded-full border border-border bg-surface-2 text-xs font-semibold text-foreground-secondary"
-            title={session.user.email ?? undefined}
-          >
-            {initials}
+          <div className="flex items-center gap-3">
+            <div
+              className="flex h-7 w-7 items-center justify-center rounded-full border border-border bg-surface-2 text-xs font-semibold text-foreground-secondary"
+              title={session.user.email ?? undefined}
+            >
+              {initials}
+            </div>
+            <form action={signOutAction}>
+              <button
+                type="submit"
+                className="cursor-pointer text-[13px] text-muted hover:text-foreground"
+              >
+                Sign out
+              </button>
+            </form>
           </div>
         </div>
         {children}

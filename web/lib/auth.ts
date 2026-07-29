@@ -65,3 +65,8 @@ export async function requireUser(userId: string) {
   if (!user) redirect("/login");
   return user;
 }
+
+export async function signOutAction() {
+  "use server";
+  await signOut({ redirectTo: "/login" });
+}
