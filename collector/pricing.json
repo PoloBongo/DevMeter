@@ -1,0 +1,6 @@
+{
+  "sonnet": { "inputPerMTok": 3, "outputPerMTok": 15 },
+  "opus": { "inputPerMTok": 15, "outputPerMTok": 75 },
+  "haiku": { "inputPerMTok": 0.8, "outputPerMTok": 4 },
+  "default": { "inputPerMTok": 3, "outputPerMTok": 15 }
+}

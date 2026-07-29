@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  hourlyRate   Decimal   @default(0) @db.Decimal(10, 2)
+  apiKeyHash   String?   @unique
+  apiKeyPrefix String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  projects     Project[]
+}
+
+model Project {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  clientName String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  sessions   Session[]
+
+  @@unique([userId, name])
+}
+
+model Session {
+  id               String    @id @default(cuid())
+  projectId        String
+  project          Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  gitBranch        String?
+  ticketRef        String?
+  startedAt        DateTime
+  endedAt          DateTime?
+  tokensInput      Int       @default(0)
+  tokensOutput     Int       @default(0)
+  estimatedCostUsd Decimal   @default(0) @db.Decimal(10, 4)
+  createdAt        DateTime  @default(now())
+
+  @@index([projectId])
+  @@index([startedAt])
+}

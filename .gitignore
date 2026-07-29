@@ -1,2 +1,10 @@
-.vercel
+node_modules/
 .env*
+!.env.example
+!web/.env.example
+.vercel
+.DS_Store
+*.log
+
+# collector local state (per-machine)
+.devmeter/

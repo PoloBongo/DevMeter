@@ -1,0 +1,13 @@
+{
+  "name": "devmeter",
+  "private": true,
+  "workspaces": [
+    "web",
+    "collector"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=web",
+    "build": "npm run build --workspace=web",
+    "collector": "npm run start --workspace=collector"
+  }
+}
