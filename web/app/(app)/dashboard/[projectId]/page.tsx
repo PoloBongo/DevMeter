@@ -6,6 +6,8 @@ import { formatDuration, formatTokens } from "@/lib/format";
 import { formatMoney } from "@/lib/currency";
 import { ProjectFilters } from "@/components/project-filters";
 import { ProjectClientForm } from "@/components/project-client-form";
+import { DeleteProjectButton } from "@/components/delete-project-button";
+import { DeleteSessionButton } from "@/components/delete-session-button";
 
 export default async function ProjectDetailPage({
   params,
@@ -50,12 +52,15 @@ export default async function ProjectDetailPage({
             clientName={detail.project.clientName}
           />
         </div>
-        <a
-          href={`/api/projects/${projectId}/sessions/export?${exportParams.toString()}`}
-          className="rounded-lg border border-border px-3.5 py-2 text-[13px] text-foreground hover:bg-white/[0.03]"
-        >
-          Export CSV
-        </a>
+        <div className="flex items-center gap-2">
+          <a
+            href={`/api/projects/${projectId}/sessions/export?${exportParams.toString()}`}
+            className="rounded-lg border border-border px-3.5 py-2 text-[13px] text-foreground hover:bg-white/[0.03]"
+          >
+            Export CSV
+          </a>
+          <DeleteProjectButton projectId={detail.project.id} />
+        </div>
       </div>
 
       <div className="mb-5.5 grid grid-cols-2 gap-3.5 sm:grid-cols-4">
@@ -88,12 +93,13 @@ export default async function ProjectDetailPage({
       <ProjectFilters />
 
       <div className="overflow-hidden rounded-xl border border-border bg-surface">
-        <div className="grid grid-cols-[1fr_1.8fr_0.9fr_1.1fr_0.9fr] px-5.5 py-3 text-[11.5px] uppercase tracking-wide text-muted border-b border-border">
+        <div className="grid grid-cols-[1fr_1.8fr_0.9fr_1.1fr_0.9fr_auto] px-5.5 py-3 text-[11.5px] uppercase tracking-wide text-muted border-b border-border">
           <span>Date</span>
           <span>Ticket / branch</span>
           <span>Duration</span>
           <span>Tokens</span>
           <span>AI cost</span>
+          <span></span>
         </div>
 
         {filtered.length === 0 && (
@@ -105,7 +111,7 @@ export default async function ProjectDetailPage({
         {filtered.map((s) => (
           <div
             key={s.id}
-            className="grid grid-cols-[1fr_1.8fr_0.9fr_1.1fr_0.9fr] items-center px-5.5 py-3.5 border-b border-border/60 last:border-b-0"
+            className="grid grid-cols-[1fr_1.8fr_0.9fr_1.1fr_0.9fr_auto] items-center px-5.5 py-3.5 border-b border-border/60 last:border-b-0"
           >
             <span className="font-mono text-[12.5px] text-muted">
               {s.startedAt.toLocaleDateString()}
@@ -125,6 +131,7 @@ export default async function ProjectDetailPage({
             <span className="font-mono text-[13px] text-accent">
               {formatMoney(detail.sessionCost(s), detail.currency)}
             </span>
+            <DeleteSessionButton sessionId={s.id} projectId={detail.project.id} />
           </div>
         ))}
       </div>
