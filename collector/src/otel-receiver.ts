@@ -2,6 +2,7 @@ import { createServer, type Server } from "node:http";
 import type { SessionTracker } from "./session-tracker.ts";
 
 const TOKEN_METRIC_NAME = "claude_code.token.usage";
+const CWD_RESOURCE_ATTRIBUTE = "devmeter.cwd";
 const DEFAULT_PORT = 4318;
 
 interface AttributeValue {
@@ -29,7 +30,12 @@ interface ScopeMetrics {
   metrics?: Metric[];
 }
 
+interface Resource {
+  attributes?: Attribute[];
+}
+
 interface ResourceMetrics {
+  resource?: Resource;
   scopeMetrics?: ScopeMetrics[];
 }
 
@@ -37,8 +43,8 @@ interface OtlpMetricsPayload {
   resourceMetrics?: ResourceMetrics[];
 }
 
-function attributeValue(dataPoint: DataPoint, key: string): string | null {
-  const attr = dataPoint.attributes?.find((a) => a.key === key);
+function findAttribute(attributes: Attribute[] | undefined, key: string): string | null {
+  const attr = attributes?.find((a) => a.key === key);
   return attr?.value?.stringValue ?? null;
 }
 
@@ -55,8 +61,8 @@ function isOtlpMetricsPayload(value: unknown): value is OtlpMetricsPayload {
 function handleTokenMetric(metric: Metric, tracker: SessionTracker): void {
   const dataPoints = metric.sum?.dataPoints ?? metric.gauge?.dataPoints ?? [];
   for (const dataPoint of dataPoints) {
-    const model = attributeValue(dataPoint, "model") ?? "unknown";
-    const type = attributeValue(dataPoint, "type");
+    const model = findAttribute(dataPoint.attributes, "model") ?? "unknown";
+    const type = findAttribute(dataPoint.attributes, "type");
     const value = dataPointValue(dataPoint);
     if (value <= 0) continue;
 
@@ -68,8 +74,18 @@ function handleTokenMetric(metric: Metric, tracker: SessionTracker): void {
   }
 }
 
+/**
+ * `getTracker` resolves which project a batch of metrics belongs to. When a
+ * session was launched via `devmeter claude`, the payload's resource carries
+ * a `devmeter.cwd` attribute (set via OTEL_RESOURCE_ATTRIBUTES) identifying
+ * exactly where that `claude` process was running — independent of where
+ * `devmeter start` itself was launched. Sessions started by hand (manually
+ * exporting the OTEL_* vars) carry no such attribute and fall back to the
+ * collector's own cwd, matching the old single-project behavior.
+ */
 export function startOtelReceiver(
-  tracker: SessionTracker,
+  getTracker: (cwd: string) => SessionTracker,
+  fallbackCwd: string,
   port = DEFAULT_PORT
 ): Server {
   const server = createServer((req, res) => {
@@ -85,6 +101,10 @@ export function startOtelReceiver(
         const body: unknown = JSON.parse(Buffer.concat(chunks).toString("utf-8"));
         if (isOtlpMetricsPayload(body)) {
           for (const resourceMetrics of body.resourceMetrics ?? []) {
+            const cwd =
+              findAttribute(resourceMetrics.resource?.attributes, CWD_RESOURCE_ATTRIBUTE) ??
+              fallbackCwd;
+            const tracker = getTracker(cwd);
             for (const scopeMetrics of resourceMetrics.scopeMetrics ?? []) {
               for (const metric of scopeMetrics.metrics ?? []) {
                 if (metric.name === TOKEN_METRIC_NAME) {

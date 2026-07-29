@@ -1,14 +1,10 @@
 import type { DevMeterConfig } from "./config.ts";
 import { sendSession } from "./api-client.ts";
 import { estimateCostUsd } from "./pricing.ts";
-import {
-  extractTicketRef,
-  getCurrentBranch,
-  getProjectName,
-  guessClientName,
-} from "./git.ts";
-import { writeFileSync } from "node:fs";
-import { STATUS_PATH } from "./config.ts";
+import { extractTicketRef, getCurrentBranch, getProjectName, guessClientName } from "./git.ts";
+import { writeStatusEntry, removeStatusEntry } from "./status-store.ts";
+
+const IDLE_TIMEOUT_MS = 15 * 60 * 1000;
 
 interface TokenBucket {
   input: number;
@@ -18,19 +14,20 @@ interface TokenBucket {
 export class SessionTracker {
   private readonly cwd: string;
   private readonly config: DevMeterConfig;
-  private readonly onActivity?: () => void;
+  private readonly onIdleFlush?: (cwd: string) => void;
   private startedAt: Date;
   private tokensByModel = new Map<string, TokenBucket>();
+  private idleTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     config: DevMeterConfig,
     cwd: string,
-    onActivity?: () => void
+    onIdleFlush?: (cwd: string) => void
   ) {
     this.config = config;
     this.cwd = cwd;
     this.startedAt = new Date();
-    this.onActivity = onActivity;
+    this.onIdleFlush = onIdleFlush;
   }
 
   addTokens(model: string, input: number, output: number): void {
@@ -39,7 +36,7 @@ export class SessionTracker {
     bucket.output += output;
     this.tokensByModel.set(model, bucket);
     this.writeStatus();
-    this.onActivity?.();
+    this.scheduleIdleFlush();
   }
 
   private totals() {
@@ -56,23 +53,29 @@ export class SessionTracker {
 
   private writeStatus(): void {
     const { tokensInput, tokensOutput, estimatedCostUsd } = this.totals();
-    writeFileSync(
-      STATUS_PATH,
-      JSON.stringify(
-        {
-          cwd: this.cwd,
-          gitBranch: getCurrentBranch(this.cwd),
-          startedAt: this.startedAt.toISOString(),
-          updatedAt: new Date().toISOString(),
-          tokensInput,
-          tokensOutput,
-          estimatedCostUsd,
-        },
-        null,
-        2
-      ),
-      "utf-8"
-    );
+    writeStatusEntry(this.cwd, {
+      cwd: this.cwd,
+      gitBranch: getCurrentBranch(this.cwd),
+      startedAt: this.startedAt.toISOString(),
+      updatedAt: new Date().toISOString(),
+      tokensInput,
+      tokensOutput,
+      estimatedCostUsd,
+    });
+  }
+
+  private scheduleIdleFlush(): void {
+    this.clearIdleTimer();
+    this.idleTimer = setTimeout(() => {
+      void this.finalize().then(() => this.onIdleFlush?.(this.cwd));
+    }, IDLE_TIMEOUT_MS);
+  }
+
+  clearIdleTimer(): void {
+    if (this.idleTimer) {
+      clearTimeout(this.idleTimer);
+      this.idleTimer = null;
+    }
   }
 
   hasActivity(): boolean {
@@ -80,6 +83,7 @@ export class SessionTracker {
   }
 
   async finalize(): Promise<void> {
+    this.clearIdleTimer();
     if (!this.hasActivity()) return;
 
     const { tokensInput, tokensOutput, estimatedCostUsd } = this.totals();
@@ -99,5 +103,6 @@ export class SessionTracker {
 
     this.tokensByModel.clear();
     this.startedAt = new Date();
+    removeStatusEntry(this.cwd);
   }
 }

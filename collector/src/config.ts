@@ -7,7 +7,7 @@ export interface DevMeterConfig {
   apiUrl: string;
 }
 
-const CONFIG_DIR = join(homedir(), ".devmeter");
+export const CONFIG_DIR = join(homedir(), ".devmeter");
 const CONFIG_PATH = join(CONFIG_DIR, "config.json");
 export const STATUS_PATH = join(CONFIG_DIR, "status.json");
 

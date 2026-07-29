@@ -2,26 +2,23 @@ import { requireConfig } from "../config.ts";
 import { SessionTracker } from "../session-tracker.ts";
 import { startOtelReceiver } from "../otel-receiver.ts";
 
-const IDLE_TIMEOUT_MS = 15 * 60 * 1000;
-
 export async function startCommand(): Promise<void> {
   const config = requireConfig();
-  const cwd = process.cwd();
+  const fallbackCwd = process.cwd();
+  const trackers = new Map<string, SessionTracker>();
 
-  let idleTimer: ReturnType<typeof setTimeout> | null = null;
-
-  const scheduleIdleFlush = () => {
-    if (idleTimer) clearTimeout(idleTimer);
-    idleTimer = setTimeout(() => {
-      void tracker.finalize().then(() => {
-        console.log("\nIdle for 15 minutes — session sent to DevMeter.");
+  function getTracker(cwd: string): SessionTracker {
+    let tracker = trackers.get(cwd);
+    if (!tracker) {
+      tracker = new SessionTracker(config, cwd, (flushedCwd) => {
+        console.log(`\nIdle for 15 minutes — sent ${flushedCwd} to DevMeter.`);
       });
-    }, IDLE_TIMEOUT_MS);
-  };
+      trackers.set(cwd, tracker);
+    }
+    return tracker;
+  }
 
-  const tracker = new SessionTracker(config, cwd, scheduleIdleFlush);
-  const server = startOtelReceiver(tracker);
-  scheduleIdleFlush();
+  const server = startOtelReceiver(getTracker, fallbackCwd);
 
   const otelVars: Record<string, string> = {
     CLAUDE_CODE_ENABLE_TELEMETRY: "1",
@@ -32,10 +29,17 @@ export async function startCommand(): Promise<void> {
     OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE: "delta",
   };
 
-  console.log("DevMeter collector listening on http://localhost:4318");
-  console.log(`Tracking project in: ${cwd}\n`);
+  console.log("DevMeter collector listening on http://localhost:4318\n");
   console.log(
-    "Set these in a separate terminal before running `claude` there:\n"
+    "Recommended: from any project directory, run `devmeter claude` instead\n" +
+      "of `claude` directly — it tags that session with its real directory,\n" +
+      "so tokens land on the right project even if you switch directories\n" +
+      "without restarting this collector.\n"
+  );
+  console.log(
+    "Manual alternative (always attributed to where this collector was\n" +
+      "started, regardless of where `claude` itself runs) — set these in a\n" +
+      "separate terminal before running `claude` there:\n"
   );
   if (process.platform === "win32") {
     for (const [key, value] of Object.entries(otelVars)) {
@@ -47,17 +51,17 @@ export async function startCommand(): Promise<void> {
     }
   }
   console.log("");
-  console.log("Press Ctrl+C to stop and send this session to DevMeter.\n");
+  console.log("Press Ctrl+C to stop and send any in-progress sessions to DevMeter.\n");
 
   const shutdown = async () => {
-    console.log("\nStopping collector, sending session…");
-    if (idleTimer) clearTimeout(idleTimer);
+    console.log("\nStopping collector, sending sessions…");
+    for (const tracker of trackers.values()) tracker.clearIdleTimer();
     server.close();
     try {
-      await tracker.finalize();
+      await Promise.all([...trackers.values()].map((tracker) => tracker.finalize()));
       console.log("Done.");
     } catch (error) {
-      console.error("Failed to send session:", error);
+      console.error("Failed to send sessions:", error);
     }
     process.exit(0);
   };

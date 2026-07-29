@@ -3,6 +3,7 @@ import { Command } from "commander";
 import { loginCommand } from "./commands/login.ts";
 import { startCommand } from "./commands/start.ts";
 import { statusCommand } from "./commands/status.ts";
+import { claudeCommand } from "./commands/claude.ts";
 
 const program = new Command();
 
@@ -32,9 +33,21 @@ program
 
 program
   .command("status")
-  .description("Show the current in-progress session, if any")
+  .description("Show all currently in-progress sessions, if any")
   .action(() => {
     statusCommand();
+  });
+
+program
+  .command("claude")
+  .description(
+    "Run `claude` tagged with the current directory, so a running " +
+      "`devmeter start` attributes its tokens to the right project"
+  )
+  .allowUnknownOption()
+  .argument("[args...]", "arguments passed through to `claude`")
+  .action((args: string[]) => {
+    claudeCommand(args);
   });
 
 program.parse();
