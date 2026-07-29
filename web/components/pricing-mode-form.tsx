@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { updatePricingModeAction } from "@/app/(app)/settings/actions";
 import { currencySymbol, type Currency } from "@/lib/currency";
+import { useToast } from "@/components/toast-provider";
 
 const OPTIONS = [
   {
@@ -34,9 +35,16 @@ export function PricingModeForm({
   currency: Currency;
 }) {
   const [mode, setMode] = useState(pricingMode);
+  const toast = useToast();
 
   return (
-    <form action={updatePricingModeAction} className="flex flex-col gap-3">
+    <form
+      action={async (formData) => {
+        await updatePricingModeAction(formData);
+        toast("Pricing mode updated");
+      }}
+      className="flex flex-col gap-3"
+    >
       {OPTIONS.map((option) => (
         <label
           key={option.value}

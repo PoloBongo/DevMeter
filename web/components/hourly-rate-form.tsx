@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { updateHourlyRateAction } from "@/app/(app)/settings/actions";
 import { currencySymbol, type Currency } from "@/lib/currency";
+import { useToast } from "@/components/toast-provider";
 
 export function HourlyRateForm({
   rateMode,
@@ -19,9 +20,16 @@ export function HourlyRateForm({
 }) {
   const [mode, setMode] = useState(rateMode);
   const symbol = currencySymbol(currency);
+  const toast = useToast();
 
   return (
-    <form action={updateHourlyRateAction} className="flex flex-col gap-3">
+    <form
+      action={async (formData) => {
+        await updateHourlyRateAction(formData);
+        toast("Rate updated");
+      }}
+      className="flex flex-col gap-3"
+    >
       <input type="hidden" name="rateMode" value={mode} />
 
       <div className="flex gap-1.5">

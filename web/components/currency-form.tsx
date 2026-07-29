@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { updateCurrencyAction } from "@/app/(app)/settings/actions";
 import type { Currency } from "@/lib/currency";
+import { useToast } from "@/components/toast-provider";
 
 const OPTIONS: { value: Currency; label: string }[] = [
   { value: "EUR", label: "€ Euro" },
@@ -11,9 +12,16 @@ const OPTIONS: { value: Currency; label: string }[] = [
 
 export function CurrencyForm({ currency }: { currency: Currency }) {
   const [value, setValue] = useState<Currency>(currency);
+  const toast = useToast();
 
   return (
-    <form action={updateCurrencyAction} className="flex items-center gap-2.5">
+    <form
+      action={async (formData) => {
+        await updateCurrencyAction(formData);
+        toast("Currency updated");
+      }}
+      className="flex items-center gap-2.5"
+    >
       <div className="flex gap-1.5">
         {OPTIONS.map((option) => (
           <button

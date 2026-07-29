@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { deleteSessionAction } from "@/app/(app)/dashboard/actions";
+import { useToast } from "@/components/toast-provider";
 
 export function DeleteSessionButton({
   sessionId,
@@ -11,6 +12,7 @@ export function DeleteSessionButton({
   projectId: string;
 }) {
   const [confirming, setConfirming] = useState(false);
+  const toast = useToast();
 
   if (!confirming) {
     return (
@@ -26,7 +28,13 @@ export function DeleteSessionButton({
   }
 
   return (
-    <form action={deleteSessionAction} className="flex items-center gap-1">
+    <form
+      action={async (formData) => {
+        await deleteSessionAction(formData);
+        toast("Session deleted");
+      }}
+      className="flex items-center gap-1"
+    >
       <input type="hidden" name="sessionId" value={sessionId} />
       <input type="hidden" name="projectId" value={projectId} />
       <button

@@ -83,7 +83,7 @@ export async function deleteProjectAction(formData: FormData) {
   });
 
   revalidatePath("/dashboard");
-  redirect("/dashboard");
+  redirect("/dashboard?toast=Project+deleted");
 }
 
 const deleteSessionSchema = z.object({

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { updateProjectClientAction } from "@/app/(app)/dashboard/actions";
+import { useToast } from "@/components/toast-provider";
 
 export function ProjectClientForm({
   projectId,
@@ -11,6 +12,7 @@ export function ProjectClientForm({
   clientName: string | null;
 }) {
   const [editing, setEditing] = useState(false);
+  const toast = useToast();
 
   if (!editing) {
     return (
@@ -28,6 +30,7 @@ export function ProjectClientForm({
       action={async (formData) => {
         await updateProjectClientAction(formData);
         setEditing(false);
+        toast("Client updated");
       }}
       className="flex items-center gap-2"
     >

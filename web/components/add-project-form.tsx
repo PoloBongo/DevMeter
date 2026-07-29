@@ -2,10 +2,12 @@
 
 import { useRef, useState } from "react";
 import { createProjectAction } from "@/app/(app)/dashboard/actions";
+import { useToast } from "@/components/toast-provider";
 
 export function AddProjectForm() {
   const [open, setOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  const toast = useToast();
 
   if (!open) {
     return (
@@ -25,6 +27,7 @@ export function AddProjectForm() {
         await createProjectAction(formData);
         formRef.current?.reset();
         setOpen(false);
+        toast("Project created");
       }}
       className="flex items-center gap-2"
     >

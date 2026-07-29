@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { regenerateApiKeyAction } from "@/app/(app)/settings/actions";
+import { useToast } from "@/components/toast-provider";
 
 export function ApiKeySection({
   hasKey,
@@ -13,12 +14,14 @@ export function ApiKeySection({
   const [revealedKey, setRevealedKey] = useState<string | null>(null);
   const [copyLabel, setCopyLabel] = useState("Copy");
   const [pending, startTransition] = useTransition();
+  const toast = useToast();
 
   function handleRegenerate() {
     startTransition(async () => {
       const { apiKey } = await regenerateApiKeyAction();
       setRevealedKey(apiKey);
       setCopyLabel("Copy");
+      toast("API key regenerated");
     });
   }
 

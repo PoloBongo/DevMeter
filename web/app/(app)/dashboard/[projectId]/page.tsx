@@ -8,6 +8,7 @@ import { ProjectFilters } from "@/components/project-filters";
 import { ProjectClientForm } from "@/components/project-client-form";
 import { DeleteProjectButton } from "@/components/delete-project-button";
 import { DeleteSessionButton } from "@/components/delete-session-button";
+import { ToastFromQuery } from "@/components/toast-from-query";
 
 export default async function ProjectDetailPage({
   params,
@@ -33,8 +34,11 @@ export default async function ProjectDetailPage({
   exportParams.set("range", normalizedRange);
   if (q) exportParams.set("q", q);
 
+  const showPaygHint = detail.pricingMode !== "PAYG";
+
   return (
     <div className="mx-auto w-full max-w-5xl px-7 py-8">
+      <ToastFromQuery />
       <Link
         href="/dashboard"
         className="mb-4 inline-flex items-center gap-1.5 text-[13px] text-muted hover:text-foreground"
@@ -75,6 +79,14 @@ export default async function ProjectDetailPage({
           <div className="font-mono text-[21px] font-semibold text-accent">
             {formatMoney(detail.monthAiCost, detail.currency)}
           </div>
+          {showPaygHint &&
+            Math.round(detail.monthAiCostPaygEquivalent * 100) !==
+              Math.round(detail.monthAiCost * 100) && (
+              <div className="mt-0.5 text-[11px] text-dim">
+                ≈ {formatMoney(detail.monthAiCostPaygEquivalent, detail.currency)}{" "}
+                payg
+              </div>
+            )}
         </div>
         <div className="rounded-xl border border-border bg-surface px-4.5 py-4">
           <div className="mb-1.5 text-xs text-muted">Total cost (mo.)</div>
@@ -128,9 +140,17 @@ export default async function ProjectDetailPage({
             <span className="font-mono text-[13px] text-muted">
               {formatTokens(s.tokensInput + s.tokensOutput)}
             </span>
-            <span className="font-mono text-[13px] text-accent">
+            <div className="font-mono text-[13px] text-accent">
               {formatMoney(detail.sessionCost(s), detail.currency)}
-            </span>
+              {showPaygHint &&
+                Math.round(detail.sessionCostPaygEquivalent(s) * 100) !==
+                  Math.round(detail.sessionCost(s) * 100) && (
+                  <div className="text-[10.5px] text-dim">
+                    ≈ {formatMoney(detail.sessionCostPaygEquivalent(s), detail.currency)}{" "}
+                    payg
+                  </div>
+                )}
+            </div>
             <DeleteSessionButton sessionId={s.id} projectId={detail.project.id} />
           </div>
         ))}

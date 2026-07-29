@@ -61,7 +61,7 @@ database) once after the first deploy to apply migrations there too.
 
 ## 3. Track a real project with the collector
 
-Install dependencies and log in once with your API key:
+One-time setup on a machine (never needs repeating after this):
 
 ```bash
 cd collector
@@ -70,31 +70,65 @@ npm link                # exposes a global `devmeter` command
 devmeter login <api_key> --api-url https://<your-deployment>.vercel.app
 ```
 
-Then, inside any project you want to track:
+### Recommended: `devmeter claude`
+
+Run this instead of `claude` directly, from inside the project you're
+working on:
+
+```bash
+cd /path/to/your/project
+devmeter claude
+```
+
+It launches `claude` (any arguments, e.g. `devmeter claude --resume <id>`,
+pass through normally) with a dedicated local OTLP receiver for just that
+session, tagged to the current directory by construction — no shared
+state, no risk of tokens landing on the wrong project even if you switch
+directories between sessions. When `claude` exits, the session is sent to
+DevMeter automatically.
+
+To stop typing `devmeter claude` every time, shadow `claude` in your shell
+profile so plain `claude` does it for you:
+
+**PowerShell** (`$PROFILE` — create it first with
+`New-Item -ItemType File -Path $PROFILE -Force` if it doesn't exist):
+
+```powershell
+function claude {
+    devmeter claude @args
+}
+```
+
+**bash/zsh** (`~/.bashrc` / `~/.zshrc`):
+
+```bash
+claude() { devmeter claude "$@"; }
+```
+
+Open a new terminal afterward for the shell to pick it up.
+
+### Alternative: `devmeter start`
+
+A persistent collector you leave running in one terminal, with Claude Code
+pointed at it manually in others. Simpler mentally, but every session run
+while it's up is attributed to **wherever `devmeter start` itself was
+launched from** — not wherever `claude` runs — since Claude Code's OTLP
+export carries no directory info of its own.
 
 ```bash
 cd /path/to/your/project
 devmeter start
 ```
 
-`devmeter start` prints the environment variables to export in that same
-terminal so Claude Code reports telemetry to the local collector:
+It prints the environment variables to export in another terminal before
+running `claude` there. Run `devmeter status` to see all currently
+in-progress sessions. Press **Ctrl+C** to stop and flush them to DevMeter.
 
-```bash
-export CLAUDE_CODE_ENABLE_TELEMETRY=1
-export OTEL_METRICS_EXPORTER=otlp
-export OTEL_EXPORTER_OTLP_PROTOCOL=http/json
-export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
-export OTEL_METRIC_EXPORT_INTERVAL=10000
-export OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE=delta
-```
+### Either way
 
-Work normally with `claude` in that terminal. Run `devmeter status` in
-another terminal to see the running session's tokens and estimated cost.
-Press **Ctrl+C** in the `devmeter start` terminal to close the session — it
-is sent to DevMeter and shows up on the dashboard immediately, tagged with
-the current git branch (and a ticket ref auto-extracted from it, e.g.
-`fix/TICKET-148-...` → `TICKET-148`).
+Sessions are tagged with the current git branch (and a ticket ref
+auto-extracted from it, e.g. `fix/TICKET-148-...` → `TICKET-148`), and show
+up on the dashboard as soon as the session ends.
 
 ## Data model
 

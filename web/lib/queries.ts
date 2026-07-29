@@ -10,8 +10,12 @@ export type ProjectSummary = {
   lastActivity: Date | null;
   monthMinutes: number;
   monthAiCost: number;
+  /** Raw token-based estimate, ignoring pricing mode — shown as an FYI next to monthAiCost when they differ. */
+  monthAiCostPaygEquivalent: number;
   monthTotalCost: number;
 };
+
+export type ProjectOption = { id: string; name: string };
 
 export type BreakEven = {
   subscriptionCost: number;
@@ -129,9 +133,12 @@ function buildDailySeries(
   return points;
 }
 
-export async function getDashboardData(userId: string) {
+export async function getDashboardData(
+  userId: string,
+  filter?: { projectId?: string }
+) {
   const user = await requireUser(userId);
-  const projects = await prisma.project.findMany({
+  const allProjects = await prisma.project.findMany({
     where: { userId },
     orderBy: { createdAt: "desc" },
     include: { sessions: { orderBy: { startedAt: "desc" } } },
@@ -139,21 +146,26 @@ export async function getDashboardData(userId: string) {
 
   const monthStart = startOfMonth(new Date());
   const hourlyRate = Number(user.hourlyRate);
-  const allMonthSessions = projects
+
+  // Pricing denominator (amortization share, break-even) is always
+  // account-wide — a subscription isn't scoped to one project.
+  const allMonthSessions = allProjects
     .flatMap((p) => p.sessions)
     .filter((s) => s.startedAt >= monthStart);
-
   const totalMonthTokens = allMonthSessions.reduce(
     (sum, s) => sum + sessionTokens(s),
     0
   );
-
   const pricing: Pricing = {
     mode: user.pricingMode,
     currency: user.currency,
     subscriptionCost: Number(user.subscriptionCost ?? 0),
     totalMonthTokens,
   };
+
+  const projects = filter?.projectId
+    ? allProjects.filter((p) => p.id === filter.projectId)
+    : allProjects;
 
   const projectSummaries: ProjectSummary[] = projects.map((project) => {
     const monthSessions = project.sessions.filter(
@@ -167,6 +179,10 @@ export async function getDashboardData(userId: string) {
       (sum, s) => sum + effectiveSessionCost(s, pricing),
       0
     );
+    const monthAiCostPaygEquivalent = convertFromUsd(
+      monthSessions.reduce((sum, s) => sum + paygEquivalentUsd(s), 0),
+      pricing.currency
+    );
 
     return {
       id: project.id,
@@ -175,15 +191,18 @@ export async function getDashboardData(userId: string) {
       lastActivity: project.sessions[0]?.startedAt ?? null,
       monthMinutes,
       monthAiCost,
+      monthAiCostPaygEquivalent,
       monthTotalCost: (monthMinutes / 60) * hourlyRate + monthAiCost,
     };
   });
 
-  const allSessions = projects.flatMap((p) => p.sessions);
+  const filteredSessions = projects.flatMap((p) => p.sessions);
 
   return {
     currency: user.currency,
     hourlyRate,
+    pricingMode: user.pricingMode,
+    projectOptions: allProjects.map((p): ProjectOption => ({ id: p.id, name: p.name })),
     projectSummaries,
     breakEven: computeBreakEven(pricing, allMonthSessions),
     totalMonthMinutes: projectSummaries.reduce(
@@ -194,11 +213,15 @@ export async function getDashboardData(userId: string) {
       (sum, p) => sum + p.monthAiCost,
       0
     ),
+    totalMonthAiCostPaygEquivalent: projectSummaries.reduce(
+      (sum, p) => sum + p.monthAiCostPaygEquivalent,
+      0
+    ),
     totalMonthCost: projectSummaries.reduce(
       (sum, p) => sum + p.monthTotalCost,
       0
     ),
-    series: buildDailySeries(allSessions, 30, pricing),
+    series: buildDailySeries(filteredSessions, 30, pricing),
   };
 }
 
@@ -269,15 +292,23 @@ export async function getProjectDetail(userId: string, projectId: string) {
     (sum, s) => sum + effectiveSessionCost(s, pricing),
     0
   );
+  const monthAiCostPaygEquivalent = convertFromUsd(
+    monthSessions.reduce((sum, s) => sum + paygEquivalentUsd(s), 0),
+    pricing.currency
+  );
 
   return {
     project,
     currency: user.currency,
     hourlyRate,
+    pricingMode: user.pricingMode,
     monthMinutes,
     monthAiCost,
+    monthAiCostPaygEquivalent,
     monthTotalCost: (monthMinutes / 60) * hourlyRate + monthAiCost,
     sessionMinutes,
     sessionCost: (session: Session) => effectiveSessionCost(session, pricing),
+    sessionCostPaygEquivalent: (session: Session) =>
+      convertFromUsd(paygEquivalentUsd(session), pricing.currency),
   };
 }
