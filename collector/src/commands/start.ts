@@ -23,17 +23,30 @@ export async function startCommand(): Promise<void> {
   const server = startOtelReceiver(tracker);
   scheduleIdleFlush();
 
+  const otelVars: Record<string, string> = {
+    CLAUDE_CODE_ENABLE_TELEMETRY: "1",
+    OTEL_METRICS_EXPORTER: "otlp",
+    OTEL_EXPORTER_OTLP_PROTOCOL: "http/json",
+    OTEL_EXPORTER_OTLP_ENDPOINT: "http://localhost:4318",
+    OTEL_METRIC_EXPORT_INTERVAL: "10000",
+    OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE: "delta",
+  };
+
   console.log("DevMeter collector listening on http://localhost:4318");
   console.log(`Tracking project in: ${cwd}\n`);
-  console.log("Export these in this terminal before running `claude`:\n");
-  console.log("  export CLAUDE_CODE_ENABLE_TELEMETRY=1");
-  console.log("  export OTEL_METRICS_EXPORTER=otlp");
-  console.log("  export OTEL_EXPORTER_OTLP_PROTOCOL=http/json");
-  console.log("  export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318");
-  console.log("  export OTEL_METRIC_EXPORT_INTERVAL=10000");
   console.log(
-    "  export OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE=delta\n"
+    "Set these in a separate terminal before running `claude` there:\n"
   );
+  if (process.platform === "win32") {
+    for (const [key, value] of Object.entries(otelVars)) {
+      console.log(`  $env:${key} = "${value}"`);
+    }
+  } else {
+    for (const [key, value] of Object.entries(otelVars)) {
+      console.log(`  export ${key}=${value}`);
+    }
+  }
+  console.log("");
   console.log("Press Ctrl+C to stop and send this session to DevMeter.\n");
 
   const shutdown = async () => {
