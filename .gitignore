@@ -1,4 +1,9 @@
 node_modules/
+# npm on Windows writes lockfile entries only for the current platform's
+# optional native binaries (e.g. lightningcss-win32-*), which breaks the
+# Linux Vercel build when committed. No lockfile = each environment
+# resolves its own platform's binaries fresh.
+package-lock.json
 .env*
 !.env.example
 !web/.env.example
