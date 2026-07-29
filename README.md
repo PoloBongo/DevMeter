@@ -61,6 +61,9 @@ database) once after the first deploy to apply migrations there too.
 
 ## 3. Track a real project with the collector
 
+Setting up a **new machine**? Paste [`SETUP_NEW_MACHINE.md`](SETUP_NEW_MACHINE.md)
+into a fresh Claude Code session there and it'll do the rest.
+
 One-time setup on a machine (never needs repeating after this):
 
 ```bash
