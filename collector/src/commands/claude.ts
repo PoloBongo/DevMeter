@@ -1,39 +1,66 @@
 import { spawn } from "node:child_process";
+import type { AddressInfo } from "node:net";
+import { requireConfig } from "../config.ts";
+import { SessionTracker } from "../session-tracker.ts";
+import { startOtelReceiver } from "../otel-receiver.ts";
 
 /**
- * Launches `claude` with telemetry wired to the local DevMeter collector and
- * tagged with the current directory via the standard OTEL_RESOURCE_ATTRIBUTES
- * env var. This lets the collector attribute tokens to the right project even
- * if it was started from a different directory, or if you switch projects
- * across multiple `claude` sessions without restarting `devmeter start`.
+ * Claude Code does not propagate OTEL_RESOURCE_ATTRIBUTES into its OTLP
+ * export (verified empirically — the resource only ever carries host/service
+ * metadata), so there's no way to tag a session's directory from the outside
+ * and have a shared collector route it correctly. Instead, each invocation
+ * gets its own dedicated OTLP receiver on an ephemeral port for the
+ * lifetime of that one `claude` process: one server, one project, no
+ * cross-session ambiguity possible by construction.
  */
 export function claudeCommand(args: string[]): void {
+  const config = requireConfig();
   const cwd = process.cwd();
+  const tracker = new SessionTracker(config, cwd);
 
-  const env = {
-    ...process.env,
-    CLAUDE_CODE_ENABLE_TELEMETRY: "1",
-    OTEL_METRICS_EXPORTER: "otlp",
-    OTEL_EXPORTER_OTLP_PROTOCOL: "http/json",
-    OTEL_EXPORTER_OTLP_ENDPOINT: "http://localhost:4318",
-    OTEL_METRIC_EXPORT_INTERVAL: "10000",
-    OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE: "delta",
-    OTEL_RESOURCE_ATTRIBUTES: `devmeter.cwd=${cwd}`,
-  };
+  const server = startOtelReceiver(() => tracker, cwd, 0);
 
-  const child = spawn("claude", args, {
-    cwd,
-    env,
-    stdio: "inherit",
-    shell: process.platform === "win32",
-  });
+  server.once("listening", () => {
+    const { port } = server.address() as AddressInfo;
 
-  child.on("error", (error) => {
-    console.error(`Failed to launch \`claude\`: ${error.message}`);
-    process.exit(1);
-  });
+    const env = {
+      ...process.env,
+      CLAUDE_CODE_ENABLE_TELEMETRY: "1",
+      OTEL_METRICS_EXPORTER: "otlp",
+      OTEL_EXPORTER_OTLP_PROTOCOL: "http/json",
+      OTEL_EXPORTER_OTLP_ENDPOINT: `http://localhost:${port}`,
+      OTEL_METRIC_EXPORT_INTERVAL: "10000",
+      OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE: "delta",
+    };
 
-  child.on("exit", (code) => {
-    process.exit(code ?? 0);
+    const child = spawn("claude", args, {
+      cwd,
+      env,
+      stdio: "inherit",
+      shell: process.platform === "win32",
+    });
+
+    let flushed = false;
+    const flushAndExit = async (code: number) => {
+      if (flushed) return;
+      flushed = true;
+      tracker.clearIdleTimer();
+      server.close();
+      try {
+        await tracker.finalize();
+      } catch (error) {
+        console.error("Failed to send session to DevMeter:", error);
+      }
+      process.exit(code);
+    };
+
+    child.on("error", (error) => {
+      console.error(`Failed to launch \`claude\`: ${error.message}`);
+      void flushAndExit(1);
+    });
+
+    child.on("exit", (code) => {
+      void flushAndExit(code ?? 0);
+    });
   });
 }
