@@ -1,14 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
-import {
-  filterSessions,
-  getProjectDetail,
-  sessionCostUsd,
-  sessionMinutes,
-} from "@/lib/queries";
+import { filterSessions, getProjectDetail, sessionMinutes } from "@/lib/queries";
 import { formatDuration, formatTokens, formatUsd } from "@/lib/format";
 import { ProjectFilters } from "@/components/project-filters";
+import { ProjectClientForm } from "@/components/project-client-form";
 
 export default async function ProjectDetailPage({
   params,
@@ -48,9 +44,10 @@ export default async function ProjectDetailPage({
           <h1 className="text-xl font-semibold tracking-tight">
             {detail.project.name}
           </h1>
-          <span className="text-[13px] text-muted">
-            {detail.project.clientName ?? "No client"}
-          </span>
+          <ProjectClientForm
+            projectId={detail.project.id}
+            clientName={detail.project.clientName}
+          />
         </div>
         <a
           href={`/api/projects/${projectId}/sessions/export?${exportParams.toString()}`}
@@ -125,7 +122,7 @@ export default async function ProjectDetailPage({
               {formatTokens(s.tokensInput + s.tokensOutput)}
             </span>
             <span className="font-mono text-[13px] text-accent">
-              {formatUsd(sessionCostUsd(s))}
+              {formatUsd(detail.sessionCostUsd(s))}
             </span>
           </div>
         ))}

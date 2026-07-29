@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { Session } from "@/generated/prisma/client";
+import type { PricingMode, Session } from "@/generated/prisma/client";
 
 export type ProjectSummary = {
   id: string;
@@ -10,6 +10,36 @@ export type ProjectSummary = {
   monthAiCostUsd: number;
   monthTotalCostUsd: number;
 };
+
+type Pricing = {
+  mode: PricingMode;
+  subscriptionCostUsd: number;
+  totalMonthTokens: number;
+};
+
+function sessionTokens(session: Pick<Session, "tokensInput" | "tokensOutput">): number {
+  return session.tokensInput + session.tokensOutput;
+}
+
+/**
+ * PAYG: use the token-based estimate the collector recorded.
+ * SUBSCRIPTION_FLAT: AI cost is already covered by a flat monthly fee — no marginal cost per session.
+ * SUBSCRIPTION_AMORTIZED: spread the flat monthly fee across sessions by their share of that month's tokens.
+ */
+function effectiveSessionCost(
+  session: Pick<Session, "tokensInput" | "tokensOutput" | "estimatedCostUsd">,
+  pricing: Pricing
+): number {
+  if (pricing.mode === "SUBSCRIPTION_FLAT") return 0;
+  if (pricing.mode === "SUBSCRIPTION_AMORTIZED") {
+    if (pricing.totalMonthTokens === 0) return 0;
+    return (
+      (sessionTokens(session) / pricing.totalMonthTokens) *
+      pricing.subscriptionCostUsd
+    );
+  }
+  return Number(session.estimatedCostUsd);
+}
 
 export type DailyPoint = {
   date: string;
@@ -31,13 +61,11 @@ export function sessionMinutes(
   );
 }
 
-export function sessionCostUsd(
-  session: Pick<Session, "estimatedCostUsd">
-): number {
-  return Number(session.estimatedCostUsd);
-}
-
-function buildDailySeries(sessions: Session[], days: number): DailyPoint[] {
+function buildDailySeries(
+  sessions: Session[],
+  days: number,
+  pricing: Pricing
+): DailyPoint[] {
   const points: DailyPoint[] = [];
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -55,7 +83,10 @@ function buildDailySeries(sessions: Session[], days: number): DailyPoint[] {
     points.push({
       date: day.toISOString().slice(0, 10),
       hours: daySessions.reduce((sum, s) => sum + sessionMinutes(s), 0) / 60,
-      aiCostUsd: daySessions.reduce((sum, s) => sum + sessionCostUsd(s), 0),
+      aiCostUsd: daySessions.reduce(
+        (sum, s) => sum + effectiveSessionCost(s, pricing),
+        0
+      ),
     });
   }
 
@@ -73,6 +104,17 @@ export async function getDashboardData(userId: string) {
   const monthStart = startOfMonth(new Date());
   const hourlyRate = Number(user.hourlyRate);
 
+  const totalMonthTokens = projects
+    .flatMap((p) => p.sessions)
+    .filter((s) => s.startedAt >= monthStart)
+    .reduce((sum, s) => sum + sessionTokens(s), 0);
+
+  const pricing: Pricing = {
+    mode: user.pricingMode,
+    subscriptionCostUsd: Number(user.subscriptionCostUsd ?? 0),
+    totalMonthTokens,
+  };
+
   const projectSummaries: ProjectSummary[] = projects.map((project) => {
     const monthSessions = project.sessions.filter(
       (s) => s.startedAt >= monthStart
@@ -82,7 +124,7 @@ export async function getDashboardData(userId: string) {
       0
     );
     const monthAiCostUsd = monthSessions.reduce(
-      (sum, s) => sum + sessionCostUsd(s),
+      (sum, s) => sum + effectiveSessionCost(s, pricing),
       0
     );
 
@@ -114,7 +156,7 @@ export async function getDashboardData(userId: string) {
       (sum, p) => sum + p.monthTotalCostUsd,
       0
     ),
-    series: buildDailySeries(allSessions, 30),
+    series: buildDailySeries(allSessions, 30, pricing),
   };
 }
 
@@ -158,6 +200,21 @@ export async function getProjectDetail(userId: string, projectId: string) {
   const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
   const hourlyRate = Number(user.hourlyRate);
   const monthStart = startOfMonth(new Date());
+
+  const monthTokensAgg = await prisma.session.aggregate({
+    where: { project: { userId }, startedAt: { gte: monthStart } },
+    _sum: { tokensInput: true, tokensOutput: true },
+  });
+  const totalMonthTokens =
+    (monthTokensAgg._sum.tokensInput ?? 0) +
+    (monthTokensAgg._sum.tokensOutput ?? 0);
+
+  const pricing: Pricing = {
+    mode: user.pricingMode,
+    subscriptionCostUsd: Number(user.subscriptionCostUsd ?? 0),
+    totalMonthTokens,
+  };
+
   const monthSessions = project.sessions.filter(
     (s) => s.startedAt >= monthStart
   );
@@ -166,17 +223,18 @@ export async function getProjectDetail(userId: string, projectId: string) {
     0
   );
   const monthAiCostUsd = monthSessions.reduce(
-    (sum, s) => sum + sessionCostUsd(s),
+    (sum, s) => sum + effectiveSessionCost(s, pricing),
     0
   );
 
   return {
     project,
     hourlyRate,
+    pricing,
     monthMinutes,
     monthAiCostUsd,
     monthTotalCostUsd: (monthMinutes / 60) * hourlyRate + monthAiCostUsd,
     sessionMinutes,
-    sessionCostUsd,
+    sessionCostUsd: (session: Session) => effectiveSessionCost(session, pricing),
   };
 }

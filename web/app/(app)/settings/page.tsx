@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ApiKeySection } from "@/components/api-key-section";
+import { PricingModeForm } from "@/components/pricing-mode-form";
 import { updateHourlyRateAction } from "@/app/(app)/settings/actions";
 
 export default async function SettingsPage() {
@@ -54,6 +55,20 @@ export default async function SettingsPage() {
             Save
           </button>
         </form>
+      </div>
+
+      <div className="mb-4.5 rounded-xl border border-border bg-surface p-5.5">
+        <div className="mb-1 text-[14.5px] font-semibold">AI pricing</div>
+        <p className="mb-4 text-[13px] leading-relaxed text-muted">
+          How AI cost is estimated — matters if you pay per token vs. a flat
+          Claude subscription.
+        </p>
+        <PricingModeForm
+          pricingMode={user.pricingMode}
+          subscriptionCostUsd={
+            user.subscriptionCostUsd ? Number(user.subscriptionCostUsd) : null
+          }
+        />
       </div>
 
       <div className="rounded-xl border border-border bg-surface p-5.5">

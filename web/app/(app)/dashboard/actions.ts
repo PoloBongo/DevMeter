@@ -35,3 +35,29 @@ export async function createProjectAction(formData: FormData) {
 
   revalidatePath("/dashboard");
 }
+
+const updateClientSchema = z.object({
+  projectId: z.string().min(1),
+  clientName: z.string().trim().max(120).optional(),
+});
+
+export async function updateProjectClientAction(formData: FormData) {
+  const session = await auth();
+  if (!session?.user) {
+    throw new Error("Unauthorized");
+  }
+
+  const parsed = updateClientSchema.safeParse({
+    projectId: formData.get("projectId"),
+    clientName: formData.get("clientName") || undefined,
+  });
+  if (!parsed.success) return;
+
+  await prisma.project.updateMany({
+    where: { id: parsed.data.projectId, userId: session.user.id },
+    data: { clientName: parsed.data.clientName ?? null },
+  });
+
+  revalidatePath(`/dashboard/${parsed.data.projectId}`);
+  revalidatePath("/dashboard");
+}

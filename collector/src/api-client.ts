@@ -2,6 +2,7 @@ import type { DevMeterConfig } from "./config.ts";
 
 export interface IngestPayload {
   projectName: string;
+  clientName?: string;
   gitBranch?: string;
   ticketRef?: string;
   startedAt: string;

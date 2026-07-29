@@ -48,3 +48,35 @@ export async function updateHourlyRateAction(formData: FormData) {
 
   revalidatePath("/settings");
 }
+
+const pricingSchema = z.object({
+  pricingMode: z.enum(["PAYG", "SUBSCRIPTION_FLAT", "SUBSCRIPTION_AMORTIZED"]),
+  subscriptionCostUsd: z.coerce.number().min(0).max(10000).optional(),
+});
+
+export async function updatePricingModeAction(formData: FormData) {
+  const session = await auth();
+  if (!session?.user) {
+    throw new Error("Unauthorized");
+  }
+
+  const raw = formData.get("subscriptionCostUsd");
+  const parsed = pricingSchema.safeParse({
+    pricingMode: formData.get("pricingMode"),
+    subscriptionCostUsd: raw ? raw : undefined,
+  });
+  if (!parsed.success) return;
+
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: {
+      pricingMode: parsed.data.pricingMode,
+      subscriptionCostUsd:
+        parsed.data.pricingMode === "SUBSCRIPTION_AMORTIZED"
+          ? (parsed.data.subscriptionCostUsd ?? 0)
+          : null,
+    },
+  });
+
+  revalidatePath("/settings");
+}

@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import {
-  filterSessions,
-  getProjectDetail,
-  sessionCostUsd,
-  sessionMinutes,
-} from "@/lib/queries";
+import { filterSessions, getProjectDetail, sessionMinutes } from "@/lib/queries";
 
 function csvEscape(value: string): string {
   if (/[",\n]/.test(value)) {
@@ -57,7 +52,7 @@ export async function GET(
       sessionMinutes(s).toFixed(1),
       String(s.tokensInput),
       String(s.tokensOutput),
-      sessionCostUsd(s).toFixed(4),
+      detail.sessionCostUsd(s).toFixed(4),
     ]
       .map(csvEscape)
       .join(",")

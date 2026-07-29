@@ -1,7 +1,12 @@
 import type { DevMeterConfig } from "./config.ts";
 import { sendSession } from "./api-client.ts";
 import { estimateCostUsd } from "./pricing.ts";
-import { extractTicketRef, getCurrentBranch, getProjectName } from "./git.ts";
+import {
+  extractTicketRef,
+  getCurrentBranch,
+  getProjectName,
+  guessClientName,
+} from "./git.ts";
 import { writeFileSync } from "node:fs";
 import { STATUS_PATH } from "./config.ts";
 
@@ -82,6 +87,7 @@ export class SessionTracker {
 
     await sendSession(this.config, {
       projectName: getProjectName(this.cwd),
+      clientName: guessClientName(this.cwd) ?? undefined,
       gitBranch: gitBranch ?? undefined,
       ticketRef: extractTicketRef(gitBranch) ?? undefined,
       startedAt: this.startedAt.toISOString(),
