@@ -104,6 +104,14 @@ export function startOtelReceiver(
             const cwd =
               findAttribute(resourceMetrics.resource?.attributes, CWD_RESOURCE_ATTRIBUTE) ??
               fallbackCwd;
+            if (process.env.DEVMETER_DEBUG) {
+              console.log(
+                "[devmeter debug] resource.attributes:",
+                JSON.stringify(resourceMetrics.resource?.attributes),
+                "-> resolved cwd:",
+                cwd
+              );
+            }
             const tracker = getTracker(cwd);
             for (const scopeMetrics of resourceMetrics.scopeMetrics ?? []) {
               for (const metric of scopeMetrics.metrics ?? []) {
