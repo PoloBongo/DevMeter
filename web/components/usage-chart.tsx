@@ -10,11 +10,12 @@ import {
   YAxis,
 } from "recharts";
 import type { DailyPoint } from "@/lib/queries";
+import { formatMoney, type Currency } from "@/lib/currency";
 
 type MiniAreaChartProps = {
   title: string;
   data: DailyPoint[];
-  dataKey: "hours" | "aiCostUsd";
+  dataKey: "hours" | "aiCost";
   color: string;
   formatValue: (value: number) => string;
 };
@@ -86,7 +87,13 @@ function MiniAreaChart({
   );
 }
 
-export function UsageChart({ data }: { data: DailyPoint[] }) {
+export function UsageChart({
+  data,
+  currency,
+}: {
+  data: DailyPoint[];
+  currency: Currency;
+}) {
   return (
     <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
       <MiniAreaChart
@@ -99,9 +106,9 @@ export function UsageChart({ data }: { data: DailyPoint[] }) {
       <MiniAreaChart
         title="AI cost"
         data={data}
-        dataKey="aiCostUsd"
+        dataKey="aiCost"
         color="#3ee08a"
-        formatValue={(v) => `$${v.toFixed(2)}`}
+        formatValue={(v) => formatMoney(v, currency)}
       />
     </div>
   );

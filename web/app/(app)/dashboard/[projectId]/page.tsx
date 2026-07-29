@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { filterSessions, getProjectDetail, sessionMinutes } from "@/lib/queries";
-import { formatDuration, formatTokens, formatUsd } from "@/lib/format";
+import { formatDuration, formatTokens } from "@/lib/format";
+import { formatMoney } from "@/lib/currency";
 import { ProjectFilters } from "@/components/project-filters";
 import { ProjectClientForm } from "@/components/project-client-form";
 
@@ -67,13 +68,13 @@ export default async function ProjectDetailPage({
         <div className="rounded-xl border border-border bg-surface px-4.5 py-4">
           <div className="mb-1.5 text-xs text-muted">AI cost (mo.)</div>
           <div className="font-mono text-[21px] font-semibold text-accent">
-            {formatUsd(detail.monthAiCostUsd)}
+            {formatMoney(detail.monthAiCost, detail.currency)}
           </div>
         </div>
         <div className="rounded-xl border border-border bg-surface px-4.5 py-4">
           <div className="mb-1.5 text-xs text-muted">Total cost (mo.)</div>
           <div className="font-mono text-[21px] font-semibold">
-            {formatUsd(detail.monthTotalCostUsd)}
+            {formatMoney(detail.monthTotalCost, detail.currency)}
           </div>
         </div>
         <div className="rounded-xl border border-border bg-surface px-4.5 py-4">
@@ -122,7 +123,7 @@ export default async function ProjectDetailPage({
               {formatTokens(s.tokensInput + s.tokensOutput)}
             </span>
             <span className="font-mono text-[13px] text-accent">
-              {formatUsd(detail.sessionCostUsd(s))}
+              {formatMoney(detail.sessionCost(s), detail.currency)}
             </span>
           </div>
         ))}

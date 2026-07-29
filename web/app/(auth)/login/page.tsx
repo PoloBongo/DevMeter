@@ -45,7 +45,7 @@ export default async function LoginPage({
         </label>
         <button
           type="submit"
-          className="mt-1 rounded-lg bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-background"
+          className="mt-1 cursor-pointer rounded-lg bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-background"
         >
           Sign in
         </button>

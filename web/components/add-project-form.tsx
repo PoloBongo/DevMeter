@@ -11,7 +11,7 @@ export function AddProjectForm() {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-background"
+        className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-background"
       >
         + Add project
       </button>
@@ -42,14 +42,14 @@ export function AddProjectForm() {
       />
       <button
         type="submit"
-        className="rounded-lg bg-accent px-3.5 py-2 text-[13px] font-semibold text-background"
+        className="cursor-pointer rounded-lg bg-accent px-3.5 py-2 text-[13px] font-semibold text-background"
       >
         Create
       </button>
       <button
         type="button"
         onClick={() => setOpen(false)}
-        className="rounded-lg border border-border px-3.5 py-2 text-[13px] text-muted"
+        className="cursor-pointer rounded-lg border border-border px-3.5 py-2 text-[13px] text-muted"
       >
         Cancel
       </button>

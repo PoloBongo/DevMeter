@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { getDashboardData } from "@/lib/queries";
-import { formatDuration, formatUsd } from "@/lib/format";
+import { formatDuration } from "@/lib/format";
+import { formatMoney } from "@/lib/currency";
 import { UsageChart } from "@/components/usage-chart";
 import { AddProjectForm } from "@/components/add-project-form";
+import { BreakEvenBanner } from "@/components/break-even-banner";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -18,6 +20,12 @@ export default async function DashboardPage() {
         <AddProjectForm />
       </div>
 
+      {data.breakEven && (
+        <div className="mb-5">
+          <BreakEvenBanner breakEven={data.breakEven} currency={data.currency} />
+        </div>
+      )}
+
       <div className="mb-5 grid grid-cols-1 gap-3.5 sm:grid-cols-3">
         <div className="rounded-xl border border-border bg-surface px-5 py-4.5">
           <div className="mb-2 text-xs text-muted">
@@ -30,7 +38,7 @@ export default async function DashboardPage() {
         <div className="rounded-xl border border-border bg-surface px-5 py-4.5">
           <div className="mb-2 text-xs text-muted">AI cost — this month</div>
           <div className="font-mono text-2xl font-semibold text-accent">
-            {formatUsd(data.totalMonthAiCostUsd)}
+            {formatMoney(data.totalMonthAiCost, data.currency)}
           </div>
         </div>
         <div className="rounded-xl border border-border bg-surface px-5 py-4.5">
@@ -38,13 +46,13 @@ export default async function DashboardPage() {
             Total estimated cost
           </div>
           <div className="font-mono text-2xl font-semibold">
-            {formatUsd(data.totalMonthCostUsd)}
+            {formatMoney(data.totalMonthCost, data.currency)}
           </div>
         </div>
       </div>
 
       <div className="mb-5">
-        <UsageChart data={data.series} />
+        <UsageChart data={data.series} currency={data.currency} />
       </div>
 
       <div className="overflow-hidden rounded-xl border border-border bg-surface">
@@ -85,10 +93,10 @@ export default async function DashboardPage() {
               {formatDuration(project.monthMinutes)}
             </span>
             <span className="font-mono text-[13px] text-accent">
-              {formatUsd(project.monthAiCostUsd)}
+              {formatMoney(project.monthAiCost, data.currency)}
             </span>
             <span className="font-mono text-[13px] font-semibold">
-              {formatUsd(project.monthTotalCostUsd)}
+              {formatMoney(project.monthTotalCost, data.currency)}
             </span>
           </Link>
         ))}

@@ -13,18 +13,32 @@ enum PricingMode {
   SUBSCRIPTION_AMORTIZED
 }
 
+enum Currency {
+  USD
+  EUR
+}
+
+enum RateMode {
+  HOURLY
+  DAILY
+}
+
 model User {
-  id                  String      @id @default(cuid())
-  email               String      @unique
-  passwordHash        String
-  hourlyRate          Decimal     @default(0) @db.Decimal(10, 2)
-  pricingMode         PricingMode @default(PAYG)
-  subscriptionCostUsd Decimal?    @db.Decimal(10, 2)
-  apiKeyHash          String?     @unique
-  apiKeyPrefix        String?
-  createdAt           DateTime    @default(now())
-  updatedAt           DateTime    @updatedAt
-  projects            Project[]
+  id               String      @id @default(cuid())
+  email            String      @unique
+  passwordHash     String
+  currency         Currency    @default(EUR)
+  hourlyRate       Decimal     @default(0) @db.Decimal(10, 2)
+  rateMode         RateMode    @default(HOURLY)
+  dailyRate        Decimal?    @db.Decimal(10, 2)
+  hoursPerDay      Decimal     @default(7) @db.Decimal(4, 1)
+  pricingMode      PricingMode @default(PAYG)
+  subscriptionCost Decimal?    @db.Decimal(10, 2)
+  apiKeyHash       String?     @unique
+  apiKeyPrefix     String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  projects         Project[]
 }
 
 model Project {

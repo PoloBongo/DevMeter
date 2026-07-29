@@ -52,7 +52,7 @@ export async function GET(
       sessionMinutes(s).toFixed(1),
       String(s.tokensInput),
       String(s.tokensOutput),
-      detail.sessionCostUsd(s).toFixed(4),
+      detail.sessionCost(s).toFixed(4),
     ]
       .map(csvEscape)
       .join(",")

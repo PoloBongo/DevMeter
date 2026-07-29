@@ -16,7 +16,7 @@ export function ProjectClientForm({
     return (
       <button
         onClick={() => setEditing(true)}
-        className="text-[13px] text-muted hover:text-foreground"
+        className="cursor-pointer text-[13px] text-muted hover:text-foreground"
       >
         {clientName ?? "No client — add one"}
       </button>
@@ -41,14 +41,14 @@ export function ProjectClientForm({
       />
       <button
         type="submit"
-        className="rounded-lg bg-accent px-2.5 py-1.5 text-[12.5px] font-semibold text-background"
+        className="cursor-pointer rounded-lg bg-accent px-2.5 py-1.5 text-[12.5px] font-semibold text-background"
       >
         Save
       </button>
       <button
         type="button"
         onClick={() => setEditing(false)}
-        className="text-[12.5px] text-muted"
+        className="cursor-pointer text-[12.5px] text-muted"
       >
         Cancel
       </button>

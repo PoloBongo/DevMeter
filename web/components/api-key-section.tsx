@@ -55,7 +55,7 @@ export function ApiKeySection({
         {revealedKey && (
           <button
             onClick={handleCopy}
-            className="rounded-lg border border-border px-3.5 text-[12.5px] text-foreground"
+            className="cursor-pointer rounded-lg border border-border px-3.5 text-[12.5px] text-foreground"
           >
             {copyLabel}
           </button>
@@ -63,7 +63,7 @@ export function ApiKeySection({
         <button
           onClick={handleRegenerate}
           disabled={pending}
-          className="rounded-lg border border-border px-3.5 text-[12.5px] text-foreground disabled:opacity-50"
+          className="cursor-pointer rounded-lg border border-border px-3.5 text-[12.5px] text-foreground disabled:cursor-not-allowed disabled:opacity-50"
         >
           {pending ? "…" : hasKey ? "Regenerate" : "Generate"}
         </button>

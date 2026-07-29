@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { PricingMode, Session } from "@/generated/prisma/client";
+import { convertFromUsd, type Currency } from "@/lib/currency";
 
 export type ProjectSummary = {
   id: string;
@@ -7,13 +8,21 @@ export type ProjectSummary = {
   clientName: string | null;
   lastActivity: Date | null;
   monthMinutes: number;
-  monthAiCostUsd: number;
-  monthTotalCostUsd: number;
+  monthAiCost: number;
+  monthTotalCost: number;
+};
+
+export type BreakEven = {
+  subscriptionCost: number;
+  paygEquivalent: number;
+  reached: boolean;
+  delta: number;
 };
 
 type Pricing = {
   mode: PricingMode;
-  subscriptionCostUsd: number;
+  currency: Currency;
+  subscriptionCost: number;
   totalMonthTokens: number;
 };
 
@@ -21,10 +30,17 @@ function sessionTokens(session: Pick<Session, "tokensInput" | "tokensOutput">): 
   return session.tokensInput + session.tokensOutput;
 }
 
+function paygEquivalentUsd(
+  session: Pick<Session, "estimatedCostUsd">
+): number {
+  return Number(session.estimatedCostUsd);
+}
+
 /**
- * PAYG: use the token-based estimate the collector recorded.
+ * PAYG: the token-based estimate the collector recorded, converted to the display currency.
  * SUBSCRIPTION_FLAT: AI cost is already covered by a flat monthly fee — no marginal cost per session.
  * SUBSCRIPTION_AMORTIZED: spread the flat monthly fee across sessions by their share of that month's tokens.
+ * (subscriptionCost is entered directly in the display currency, so it needs no conversion.)
  */
 function effectiveSessionCost(
   session: Pick<Session, "tokensInput" | "tokensOutput" | "estimatedCostUsd">,
@@ -35,16 +51,35 @@ function effectiveSessionCost(
     if (pricing.totalMonthTokens === 0) return 0;
     return (
       (sessionTokens(session) / pricing.totalMonthTokens) *
-      pricing.subscriptionCostUsd
+      pricing.subscriptionCost
     );
   }
-  return Number(session.estimatedCostUsd);
+  return convertFromUsd(paygEquivalentUsd(session), pricing.currency);
+}
+
+function computeBreakEven(
+  pricing: Pricing,
+  monthSessions: Pick<Session, "estimatedCostUsd">[]
+): BreakEven | null {
+  if (pricing.mode === "PAYG" || pricing.subscriptionCost <= 0) return null;
+
+  const paygEquivalent = convertFromUsd(
+    monthSessions.reduce((sum, s) => sum + paygEquivalentUsd(s), 0),
+    pricing.currency
+  );
+
+  return {
+    subscriptionCost: pricing.subscriptionCost,
+    paygEquivalent,
+    reached: paygEquivalent >= pricing.subscriptionCost,
+    delta: pricing.subscriptionCost - paygEquivalent,
+  };
 }
 
 export type DailyPoint = {
   date: string;
   hours: number;
-  aiCostUsd: number;
+  aiCost: number;
 };
 
 function startOfMonth(date: Date): Date {
@@ -83,7 +118,7 @@ function buildDailySeries(
     points.push({
       date: day.toISOString().slice(0, 10),
       hours: daySessions.reduce((sum, s) => sum + sessionMinutes(s), 0) / 60,
-      aiCostUsd: daySessions.reduce(
+      aiCost: daySessions.reduce(
         (sum, s) => sum + effectiveSessionCost(s, pricing),
         0
       ),
@@ -103,15 +138,19 @@ export async function getDashboardData(userId: string) {
 
   const monthStart = startOfMonth(new Date());
   const hourlyRate = Number(user.hourlyRate);
-
-  const totalMonthTokens = projects
+  const allMonthSessions = projects
     .flatMap((p) => p.sessions)
-    .filter((s) => s.startedAt >= monthStart)
-    .reduce((sum, s) => sum + sessionTokens(s), 0);
+    .filter((s) => s.startedAt >= monthStart);
+
+  const totalMonthTokens = allMonthSessions.reduce(
+    (sum, s) => sum + sessionTokens(s),
+    0
+  );
 
   const pricing: Pricing = {
     mode: user.pricingMode,
-    subscriptionCostUsd: Number(user.subscriptionCostUsd ?? 0),
+    currency: user.currency,
+    subscriptionCost: Number(user.subscriptionCost ?? 0),
     totalMonthTokens,
   };
 
@@ -123,7 +162,7 @@ export async function getDashboardData(userId: string) {
       (sum, s) => sum + sessionMinutes(s),
       0
     );
-    const monthAiCostUsd = monthSessions.reduce(
+    const monthAiCost = monthSessions.reduce(
       (sum, s) => sum + effectiveSessionCost(s, pricing),
       0
     );
@@ -134,26 +173,28 @@ export async function getDashboardData(userId: string) {
       clientName: project.clientName,
       lastActivity: project.sessions[0]?.startedAt ?? null,
       monthMinutes,
-      monthAiCostUsd,
-      monthTotalCostUsd: (monthMinutes / 60) * hourlyRate + monthAiCostUsd,
+      monthAiCost,
+      monthTotalCost: (monthMinutes / 60) * hourlyRate + monthAiCost,
     };
   });
 
   const allSessions = projects.flatMap((p) => p.sessions);
 
   return {
+    currency: user.currency,
     hourlyRate,
     projectSummaries,
+    breakEven: computeBreakEven(pricing, allMonthSessions),
     totalMonthMinutes: projectSummaries.reduce(
       (sum, p) => sum + p.monthMinutes,
       0
     ),
-    totalMonthAiCostUsd: projectSummaries.reduce(
-      (sum, p) => sum + p.monthAiCostUsd,
+    totalMonthAiCost: projectSummaries.reduce(
+      (sum, p) => sum + p.monthAiCost,
       0
     ),
-    totalMonthCostUsd: projectSummaries.reduce(
-      (sum, p) => sum + p.monthTotalCostUsd,
+    totalMonthCost: projectSummaries.reduce(
+      (sum, p) => sum + p.monthTotalCost,
       0
     ),
     series: buildDailySeries(allSessions, 30, pricing),
@@ -211,7 +252,8 @@ export async function getProjectDetail(userId: string, projectId: string) {
 
   const pricing: Pricing = {
     mode: user.pricingMode,
-    subscriptionCostUsd: Number(user.subscriptionCostUsd ?? 0),
+    currency: user.currency,
+    subscriptionCost: Number(user.subscriptionCost ?? 0),
     totalMonthTokens,
   };
 
@@ -222,19 +264,19 @@ export async function getProjectDetail(userId: string, projectId: string) {
     (sum, s) => sum + sessionMinutes(s),
     0
   );
-  const monthAiCostUsd = monthSessions.reduce(
+  const monthAiCost = monthSessions.reduce(
     (sum, s) => sum + effectiveSessionCost(s, pricing),
     0
   );
 
   return {
     project,
+    currency: user.currency,
     hourlyRate,
-    pricing,
     monthMinutes,
-    monthAiCostUsd,
-    monthTotalCostUsd: (monthMinutes / 60) * hourlyRate + monthAiCostUsd,
+    monthAiCost,
+    monthTotalCost: (monthMinutes / 60) * hourlyRate + monthAiCost,
     sessionMinutes,
-    sessionCostUsd: (session: Session) => effectiveSessionCost(session, pricing),
+    sessionCost: (session: Session) => effectiveSessionCost(session, pricing),
   };
 }

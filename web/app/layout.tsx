@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+import NextTopLoader from "nextjs-toploader";
 import "./globals.css";
 
 const plexSans = IBM_Plex_Sans({
@@ -31,6 +32,7 @@ export default function RootLayout({
       className={`${plexSans.variable} ${plexMono.variable} h-full`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground antialiased">
+        <NextTopLoader color="#3ee08a" showSpinner={false} height={2} />
         {children}
       </body>
     </html>

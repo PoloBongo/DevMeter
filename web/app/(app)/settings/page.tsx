@@ -1,8 +1,9 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ApiKeySection } from "@/components/api-key-section";
+import { HourlyRateForm } from "@/components/hourly-rate-form";
 import { PricingModeForm } from "@/components/pricing-mode-form";
-import { updateHourlyRateAction } from "@/app/(app)/settings/actions";
+import { CurrencyForm } from "@/components/currency-form";
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -24,37 +25,28 @@ export default async function SettingsPage() {
       </div>
 
       <div className="mb-4.5 rounded-xl border border-border bg-surface p-5.5">
-        <div className="mb-1 text-[14.5px] font-semibold">Hourly rate</div>
+        <div className="mb-1 text-[14.5px] font-semibold">Currency</div>
+        <p className="mb-4 text-[13px] leading-relaxed text-muted">
+          Display currency for all costs. Amounts you type yourself (rate,
+          subscription price) keep whatever number you enter — they aren&apos;t
+          converted when you switch.
+        </p>
+        <CurrencyForm currency={user.currency} />
+      </div>
+
+      <div className="mb-4.5 rounded-xl border border-border bg-surface p-5.5">
+        <div className="mb-1 text-[14.5px] font-semibold">Rate</div>
         <p className="mb-4 text-[13px] leading-relaxed text-muted">
           Used to estimate total cost per project — your time × rate, plus AI
-          spend.
+          spend. Set it per hour, or per day (TJM) if that&apos;s how you bill.
         </p>
-        <form
-          action={updateHourlyRateAction}
-          className="flex items-center gap-2.5"
-        >
-          <div className="flex items-center overflow-hidden rounded-lg border border-border bg-background">
-            <span className="pl-3 pr-1 font-mono text-[13px] text-muted">
-              $
-            </span>
-            <input
-              type="number"
-              name="hourlyRate"
-              defaultValue={Number(user.hourlyRate)}
-              min={0}
-              max={1000}
-              step={1}
-              className="w-24 bg-transparent py-2.5 pr-2 font-mono text-[13px] text-foreground outline-none"
-            />
-            <span className="pr-3 text-[12.5px] text-dim">/ hour</span>
-          </div>
-          <button
-            type="submit"
-            className="rounded-lg bg-accent px-3.5 py-2.5 text-[13px] font-semibold text-background"
-          >
-            Save
-          </button>
-        </form>
+        <HourlyRateForm
+          rateMode={user.rateMode}
+          hourlyRate={Number(user.hourlyRate)}
+          dailyRate={user.dailyRate ? Number(user.dailyRate) : null}
+          hoursPerDay={Number(user.hoursPerDay)}
+          currency={user.currency}
+        />
       </div>
 
       <div className="mb-4.5 rounded-xl border border-border bg-surface p-5.5">
@@ -65,9 +57,10 @@ export default async function SettingsPage() {
         </p>
         <PricingModeForm
           pricingMode={user.pricingMode}
-          subscriptionCostUsd={
-            user.subscriptionCostUsd ? Number(user.subscriptionCostUsd) : null
+          subscriptionCost={
+            user.subscriptionCost ? Number(user.subscriptionCost) : null
           }
+          currency={user.currency}
         />
       </div>
 

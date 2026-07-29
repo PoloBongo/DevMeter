@@ -25,7 +25,7 @@ export function ProjectFilters() {
       <select
         value={range}
         onChange={(e) => updateParam("range", e.target.value)}
-        className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-[13px] text-foreground outline-none"
+        className="cursor-pointer rounded-lg border border-border bg-surface-2 px-3 py-2 text-[13px] text-foreground outline-none"
       >
         <option value="30">Last 30 days</option>
         <option value="7">Last 7 days</option>

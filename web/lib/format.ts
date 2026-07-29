@@ -13,10 +13,6 @@ export function formatDuration(minutes: number): string {
   return `${s}s`;
 }
 
-export function formatUsd(value: number): string {
-  return `$${value.toFixed(2)}`;
-}
-
 export function formatTokens(tokens: number): string {
   return tokens.toLocaleString("en-US");
 }
