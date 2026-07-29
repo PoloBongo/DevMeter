@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
@@ -53,3 +54,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
 });
+
+/**
+ * Sessions are JWT-only (no DB-backed session store), so a deleted user's
+ * cookie stays cryptographically valid until it expires. Redirect to login
+ * instead of crashing when the row it points to is gone.
+ */
+export async function requireUser(userId: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) redirect("/login");
+  return user;
+}

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/auth";
 import type { PricingMode, Session } from "@/generated/prisma/client";
 import { convertFromUsd, type Currency } from "@/lib/currency";
 
@@ -129,7 +130,7 @@ function buildDailySeries(
 }
 
 export async function getDashboardData(userId: string) {
-  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+  const user = await requireUser(userId);
   const projects = await prisma.project.findMany({
     where: { userId },
     orderBy: { createdAt: "desc" },
@@ -238,7 +239,7 @@ export async function getProjectDetail(userId: string, projectId: string) {
 
   if (!project) return null;
 
-  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+  const user = await requireUser(userId);
   const hourlyRate = Number(user.hourlyRate);
   const monthStart = startOfMonth(new Date());
 

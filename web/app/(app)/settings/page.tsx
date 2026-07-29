@@ -1,5 +1,4 @@
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { auth, requireUser } from "@/lib/auth";
 import { ApiKeySection } from "@/components/api-key-section";
 import { HourlyRateForm } from "@/components/hourly-rate-form";
 import { PricingModeForm } from "@/components/pricing-mode-form";
@@ -7,9 +6,7 @@ import { CurrencyForm } from "@/components/currency-form";
 
 export default async function SettingsPage() {
   const session = await auth();
-  const user = await prisma.user.findUniqueOrThrow({
-    where: { id: session!.user.id },
-  });
+  const user = await requireUser(session!.user.id);
 
   return (
     <div className="mx-auto w-full max-w-2xl px-7 py-8">
