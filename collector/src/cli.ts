@@ -4,6 +4,7 @@ import { loginCommand } from "./commands/login.ts";
 import { startCommand } from "./commands/start.ts";
 import { statusCommand } from "./commands/status.ts";
 import { claudeCommand } from "./commands/claude.ts";
+import { syncCommand } from "./commands/sync.ts";
 
 const program = new Command();
 
@@ -36,6 +37,13 @@ program
   .description("Show all currently in-progress sessions, if any")
   .action(() => {
     statusCommand();
+  });
+
+program
+  .command("sync")
+  .description("Push the currently in-progress session(s) to DevMeter right now")
+  .action(() => {
+    void syncCommand();
   });
 
 program

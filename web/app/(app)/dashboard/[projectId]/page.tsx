@@ -137,9 +137,17 @@ export default async function ProjectDetailPage({
             <span className="font-mono text-[13px]">
               {formatDuration(sessionMinutes(s))}
             </span>
-            <span className="font-mono text-[13px] text-muted">
-              {formatTokens(s.tokensInput + s.tokensOutput)}
-            </span>
+            <div className="font-mono text-[13px] text-muted">
+              {formatTokens(
+                s.tokensInput + s.tokensOutput + s.tokensCacheRead + s.tokensCacheCreation
+              )}
+              {(s.tokensCacheRead > 0 || s.tokensCacheCreation > 0) && (
+                <div className="text-[10.5px] text-dim">
+                  {formatTokens(s.tokensInput)} in · {formatTokens(s.tokensOutput)} out ·{" "}
+                  {formatTokens(s.tokensCacheRead + s.tokensCacheCreation)} cache
+                </div>
+              )}
+            </div>
             <div className="font-mono text-[13px] text-accent">
               {formatMoney(detail.sessionCost(s), detail.currency)}
               {showPaygHint &&

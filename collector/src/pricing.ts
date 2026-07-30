@@ -5,9 +5,18 @@ import { dirname, join } from "node:path";
 interface ModelPricing {
   inputPerMTok: number;
   outputPerMTok: number;
+  cacheReadPerMTok: number;
+  cacheCreationPerMTok: number;
 }
 
 type PricingTable = Record<string, ModelPricing>;
+
+export interface TokenBreakdown {
+  input: number;
+  output: number;
+  cacheRead: number;
+  cacheCreation: number;
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PRICING_PATH = join(__dirname, "..", "pricing.json");
@@ -31,14 +40,13 @@ function tierForModel(model: string): string {
   return "default";
 }
 
-export function estimateCostUsd(
-  model: string,
-  tokensInput: number,
-  tokensOutput: number
-): number {
+export function estimateCostUsd(model: string, tokens: TokenBreakdown): number {
   const pricing = loadPricing();
   const tier = pricing[tierForModel(model)] ?? pricing.default;
-  const inputCost = (tokensInput / 1_000_000) * tier.inputPerMTok;
-  const outputCost = (tokensOutput / 1_000_000) * tier.outputPerMTok;
-  return inputCost + outputCost;
+  return (
+    (tokens.input / 1_000_000) * tier.inputPerMTok +
+    (tokens.output / 1_000_000) * tier.outputPerMTok +
+    (tokens.cacheRead / 1_000_000) * tier.cacheReadPerMTok +
+    (tokens.cacheCreation / 1_000_000) * tier.cacheCreationPerMTok
+  );
 }

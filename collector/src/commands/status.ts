@@ -19,7 +19,10 @@ export function statusCommand(): void {
     console.log(`Project:  ${status.cwd}`);
     console.log(`Branch:   ${status.gitBranch ?? "unknown"}`);
     console.log(`Running:  ${minutes} min`);
-    console.log(`Tokens:   ${status.tokensInput} in / ${status.tokensOutput} out`);
+    console.log(
+      `Tokens:   ${status.tokensInput} in / ${status.tokensOutput} out / ` +
+        `${status.tokensCacheRead} cache read / ${status.tokensCacheCreation} cache write`
+    );
     console.log(`Est. cost: $${status.estimatedCostUsd.toFixed(4)}`);
     console.log("");
   }

@@ -1,6 +1,7 @@
 import type { DevMeterConfig } from "./config.ts";
 
 export interface IngestPayload {
+  clientSessionId: string;
   projectName: string;
   clientName?: string;
   gitBranch?: string;
@@ -9,6 +10,8 @@ export interface IngestPayload {
   endedAt: string;
   tokensInput: number;
   tokensOutput: number;
+  tokensCacheRead: number;
+  tokensCacheCreation: number;
   estimatedCostUsd: number;
 }
 

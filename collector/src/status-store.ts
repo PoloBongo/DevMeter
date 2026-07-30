@@ -2,12 +2,15 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { STATUS_PATH, CONFIG_DIR } from "./config.ts";
 
 export interface StatusEntry {
+  sessionId: string;
   cwd: string;
   gitBranch: string | null;
   startedAt: string;
   updatedAt: string;
   tokensInput: number;
   tokensOutput: number;
+  tokensCacheRead: number;
+  tokensCacheCreation: number;
   estimatedCostUsd: number;
 }
 

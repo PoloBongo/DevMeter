@@ -58,6 +58,16 @@ function isOtlpMetricsPayload(value: unknown): value is OtlpMetricsPayload {
   return typeof value === "object" && value !== null;
 }
 
+/**
+ * Claude Code's `claude_code.token.usage` metric reports 4 distinct token
+ * kinds via the `type` attribute: `input`, `output`, `cacheRead`,
+ * `cacheCreation`. Cache reads in particular happen on nearly every turn
+ * (the full context is re-sent from cache) and are billed at ~10% of the
+ * input rate — lumping them into `input` both wildly inflates the token
+ * count shown to the user and overstates cost, since they'd be priced at
+ * full input rate. Any unrecognized type falls back to `input` so nothing
+ * is silently dropped if Claude Code adds a new kind.
+ */
 function handleTokenMetric(metric: Metric, tracker: SessionTracker): void {
   const dataPoints = metric.sum?.dataPoints ?? metric.gauge?.dataPoints ?? [];
   for (const dataPoint of dataPoints) {
@@ -66,10 +76,19 @@ function handleTokenMetric(metric: Metric, tracker: SessionTracker): void {
     const value = dataPointValue(dataPoint);
     if (value <= 0) continue;
 
-    if (type === "output") {
-      tracker.addTokens(model, 0, value);
-    } else {
-      tracker.addTokens(model, value, 0);
+    switch (type) {
+      case "output":
+        tracker.addTokens(model, "output", value);
+        break;
+      case "cacheRead":
+        tracker.addTokens(model, "cacheRead", value);
+        break;
+      case "cacheCreation":
+        tracker.addTokens(model, "cacheCreation", value);
+        break;
+      default:
+        tracker.addTokens(model, "input", value);
+        break;
     }
   }
 }

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { DevMeterConfig } from "./config.ts";
 import { sendSession } from "./api-client.ts";
 import { estimateCostUsd } from "./pricing.ts";
@@ -5,35 +6,45 @@ import { extractTicketRef, getCurrentBranch, getProjectName, guessClientName } f
 import { writeStatusEntry, removeStatusEntry } from "./status-store.ts";
 
 const IDLE_TIMEOUT_MS = 15 * 60 * 1000;
+const SYNC_INTERVAL_MS = 5 * 60 * 1000;
+
+export type TokenKind = "input" | "output" | "cacheRead" | "cacheCreation";
 
 interface TokenBucket {
   input: number;
   output: number;
+  cacheRead: number;
+  cacheCreation: number;
 }
 
 export class SessionTracker {
+  private readonly sessionId: string;
   private readonly cwd: string;
   private readonly config: DevMeterConfig;
   private readonly onIdleFlush?: (cwd: string) => void;
   private startedAt: Date;
   private tokensByModel = new Map<string, TokenBucket>();
   private idleTimer: ReturnType<typeof setTimeout> | null = null;
+  private syncTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     config: DevMeterConfig,
     cwd: string,
     onIdleFlush?: (cwd: string) => void
   ) {
+    this.sessionId = randomUUID();
     this.config = config;
     this.cwd = cwd;
     this.startedAt = new Date();
     this.onIdleFlush = onIdleFlush;
+    this.scheduleSync();
   }
 
-  addTokens(model: string, input: number, output: number): void {
-    const bucket = this.tokensByModel.get(model) ?? { input: 0, output: 0 };
-    bucket.input += input;
-    bucket.output += output;
+  addTokens(model: string, kind: TokenKind, value: number): void {
+    const bucket =
+      this.tokensByModel.get(model) ??
+      { input: 0, output: 0, cacheRead: 0, cacheCreation: 0 };
+    bucket[kind] += value;
     this.tokensByModel.set(model, bucket);
     this.writeStatus();
     this.scheduleIdleFlush();
@@ -42,26 +53,56 @@ export class SessionTracker {
   private totals() {
     let tokensInput = 0;
     let tokensOutput = 0;
+    let tokensCacheRead = 0;
+    let tokensCacheCreation = 0;
     let estimatedCostUsd = 0;
     for (const [model, bucket] of this.tokensByModel) {
       tokensInput += bucket.input;
       tokensOutput += bucket.output;
-      estimatedCostUsd += estimateCostUsd(model, bucket.input, bucket.output);
+      tokensCacheRead += bucket.cacheRead;
+      tokensCacheCreation += bucket.cacheCreation;
+      estimatedCostUsd += estimateCostUsd(model, bucket);
     }
-    return { tokensInput, tokensOutput, estimatedCostUsd };
+    return { tokensInput, tokensOutput, tokensCacheRead, tokensCacheCreation, estimatedCostUsd };
   }
 
   private writeStatus(): void {
-    const { tokensInput, tokensOutput, estimatedCostUsd } = this.totals();
+    const totals = this.totals();
     writeStatusEntry(this.cwd, {
+      sessionId: this.sessionId,
       cwd: this.cwd,
       gitBranch: getCurrentBranch(this.cwd),
       startedAt: this.startedAt.toISOString(),
       updatedAt: new Date().toISOString(),
-      tokensInput,
-      tokensOutput,
-      estimatedCostUsd,
+      ...totals,
     });
+  }
+
+  /** Periodic push of the in-progress session so the dashboard doesn't stay empty for the whole session. */
+  private scheduleSync(): void {
+    this.syncTimer = setInterval(() => {
+      void this.sync();
+    }, SYNC_INTERVAL_MS);
+    this.syncTimer.unref?.();
+  }
+
+  private async sync(): Promise<void> {
+    if (!this.hasActivity()) return;
+    const gitBranch = getCurrentBranch(this.cwd);
+    try {
+      await sendSession(this.config, {
+        clientSessionId: this.sessionId,
+        projectName: getProjectName(this.cwd),
+        clientName: guessClientName(this.cwd) ?? undefined,
+        gitBranch: gitBranch ?? undefined,
+        ticketRef: extractTicketRef(gitBranch) ?? undefined,
+        startedAt: this.startedAt.toISOString(),
+        endedAt: new Date().toISOString(),
+        ...this.totals(),
+      });
+    } catch (error) {
+      console.error("Failed to sync session to DevMeter:", error);
+    }
   }
 
   private scheduleIdleFlush(): void {
@@ -78,31 +119,30 @@ export class SessionTracker {
     }
   }
 
+  private clearSyncTimer(): void {
+    if (this.syncTimer) {
+      clearInterval(this.syncTimer);
+      this.syncTimer = null;
+    }
+  }
+
   hasActivity(): boolean {
     return this.tokensByModel.size > 0;
   }
 
   async finalize(): Promise<void> {
     this.clearIdleTimer();
+    this.clearSyncTimer();
     if (!this.hasActivity()) return;
 
-    const { tokensInput, tokensOutput, estimatedCostUsd } = this.totals();
-    const gitBranch = getCurrentBranch(this.cwd);
-
-    await sendSession(this.config, {
-      projectName: getProjectName(this.cwd),
-      clientName: guessClientName(this.cwd) ?? undefined,
-      gitBranch: gitBranch ?? undefined,
-      ticketRef: extractTicketRef(gitBranch) ?? undefined,
-      startedAt: this.startedAt.toISOString(),
-      endedAt: new Date().toISOString(),
-      tokensInput,
-      tokensOutput,
-      estimatedCostUsd,
-    });
+    await this.sync();
 
     this.tokensByModel.clear();
     this.startedAt = new Date();
     removeStatusEntry(this.cwd);
+    // Tracker instances are reused across idle-flush cycles in `devmeter
+    // start` (keyed by cwd, kept alive for the life of the collector), so
+    // re-arm the periodic sync for whatever session comes next.
+    this.scheduleSync();
   }
 }

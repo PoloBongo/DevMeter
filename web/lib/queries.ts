@@ -31,8 +31,18 @@ type Pricing = {
   totalMonthTokens: number;
 };
 
-function sessionTokens(session: Pick<Session, "tokensInput" | "tokensOutput">): number {
-  return session.tokensInput + session.tokensOutput;
+function sessionTokens(
+  session: Pick<
+    Session,
+    "tokensInput" | "tokensOutput" | "tokensCacheRead" | "tokensCacheCreation"
+  >
+): number {
+  return (
+    session.tokensInput +
+    session.tokensOutput +
+    session.tokensCacheRead +
+    session.tokensCacheCreation
+  );
 }
 
 function paygEquivalentUsd(
@@ -48,7 +58,10 @@ function paygEquivalentUsd(
  * (subscriptionCost is entered directly in the display currency, so it needs no conversion.)
  */
 function effectiveSessionCost(
-  session: Pick<Session, "tokensInput" | "tokensOutput" | "estimatedCostUsd">,
+  session: Pick<
+    Session,
+    "tokensInput" | "tokensOutput" | "tokensCacheRead" | "tokensCacheCreation" | "estimatedCostUsd"
+  >,
   pricing: Pricing
 ): number {
   if (pricing.mode === "SUBSCRIPTION_FLAT") return 0;
@@ -268,11 +281,18 @@ export async function getProjectDetail(userId: string, projectId: string) {
 
   const monthTokensAgg = await prisma.session.aggregate({
     where: { project: { userId }, startedAt: { gte: monthStart } },
-    _sum: { tokensInput: true, tokensOutput: true },
+    _sum: {
+      tokensInput: true,
+      tokensOutput: true,
+      tokensCacheRead: true,
+      tokensCacheCreation: true,
+    },
   });
   const totalMonthTokens =
     (monthTokensAgg._sum.tokensInput ?? 0) +
-    (monthTokensAgg._sum.tokensOutput ?? 0);
+    (monthTokensAgg._sum.tokensOutput ?? 0) +
+    (monthTokensAgg._sum.tokensCacheRead ?? 0) +
+    (monthTokensAgg._sum.tokensCacheCreation ?? 0);
 
   const pricing: Pricing = {
     mode: user.pricingMode,

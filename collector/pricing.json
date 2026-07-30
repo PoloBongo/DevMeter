@@ -1,6 +1,6 @@
 {
-  "sonnet": { "inputPerMTok": 3, "outputPerMTok": 15 },
-  "opus": { "inputPerMTok": 15, "outputPerMTok": 75 },
-  "haiku": { "inputPerMTok": 0.8, "outputPerMTok": 4 },
-  "default": { "inputPerMTok": 3, "outputPerMTok": 15 }
+  "sonnet": { "inputPerMTok": 3, "outputPerMTok": 15, "cacheReadPerMTok": 0.3, "cacheCreationPerMTok": 3.75 },
+  "opus": { "inputPerMTok": 15, "outputPerMTok": 75, "cacheReadPerMTok": 1.5, "cacheCreationPerMTok": 18.75 },
+  "haiku": { "inputPerMTok": 0.8, "outputPerMTok": 4, "cacheReadPerMTok": 0.08, "cacheCreationPerMTok": 1 },
+  "default": { "inputPerMTok": 3, "outputPerMTok": 15, "cacheReadPerMTok": 0.3, "cacheCreationPerMTok": 3.75 }
 }
