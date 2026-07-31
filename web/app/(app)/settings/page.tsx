@@ -1,13 +1,19 @@
 import { auth, requireUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { emailDomain, isEligibleForEnterpriseMode } from "@/lib/organization";
 import { ApiKeySection } from "@/components/api-key-section";
 import { HourlyRateForm } from "@/components/hourly-rate-form";
 import { PricingModeForm } from "@/components/pricing-mode-form";
 import { CurrencyForm } from "@/components/currency-form";
 import { BudgetForm } from "@/components/budget-form";
+import { EnterpriseSection } from "@/components/enterprise-section";
 
 export default async function SettingsPage() {
   const session = await auth();
   const user = await requireUser(session!.user.id);
+  const organization = user.organizationId
+    ? await prisma.organization.findUnique({ where: { id: user.organizationId } })
+    : null;
 
   return (
     <div className="mx-auto w-full max-w-2xl px-7 py-8">
@@ -75,6 +81,21 @@ export default async function SettingsPage() {
           key={String(user.budgetAmount ?? "off")}
           budgetAmount={user.budgetAmount ? Number(user.budgetAmount) : null}
           currency={user.currency}
+        />
+      </div>
+
+      <div className="mb-4.5 rounded-xl border border-border bg-surface p-5.5">
+        <div className="mb-1 text-[14.5px] font-semibold">Enterprise</div>
+        <p className="mb-4 text-[13px] leading-relaxed text-muted">
+          Group teammates who share your company email domain — each keeps
+          their own rate, currency, and private projects; the org owner gets
+          a read-only usage rollup.
+        </p>
+        <EnterpriseSection
+          domain={emailDomain(user.email)}
+          eligible={isEligibleForEnterpriseMode(user.email)}
+          organizationName={organization?.name ?? null}
+          isOwner={organization?.ownerId === user.id}
         />
       </div>
 

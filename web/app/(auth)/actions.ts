@@ -6,6 +6,7 @@ import { AuthError } from "next-auth";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { signIn } from "@/lib/auth";
+import { emailDomain } from "@/lib/organization";
 
 const credentialsSchema = z.object({
   email: z.email(),
@@ -54,7 +55,12 @@ export async function registerAction(formData: FormData) {
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
-  await prisma.user.create({ data: { email, passwordHash } });
+  const org = await prisma.organization.findUnique({
+    where: { domain: emailDomain(email) },
+  });
+  await prisma.user.create({
+    data: { email, passwordHash, organizationId: org?.id },
+  });
 
   await signIn("credentials", {
     email,

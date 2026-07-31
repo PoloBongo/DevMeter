@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signOutAction } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { NavLinks } from "@/components/nav-links";
 import { ToastProvider } from "@/components/toast-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -16,6 +17,12 @@ export default async function AppLayout({
   }
 
   const initials = session.user.email?.slice(0, 2).toUpperCase() ?? "??";
+  const ownsOrganization = Boolean(
+    await prisma.organization.findUnique({
+      where: { ownerId: session.user.id },
+      select: { id: true },
+    })
+  );
 
   return (
     <ToastProvider>
@@ -30,7 +37,7 @@ export default async function AppLayout({
               </div>
               <span className="text-sm font-semibold">DevMeter</span>
             </Link>
-            <NavLinks />
+            <NavLinks showTeamLink={ownsOrganization} />
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />

@@ -3,17 +3,20 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const LINKS = [
+const BASE_LINKS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/settings", label: "Settings" },
 ];
 
-export function NavLinks() {
+export function NavLinks({ showTeamLink }: { showTeamLink: boolean }) {
   const pathname = usePathname();
+  const links = showTeamLink
+    ? [...BASE_LINKS, { href: "/team", label: "Team" }]
+    : BASE_LINKS;
 
   return (
     <div className="flex gap-5.5">
-      {LINKS.map((link) => {
+      {links.map((link) => {
         const active =
           link.href === "/dashboard"
             ? pathname.startsWith("/dashboard")

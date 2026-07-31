@@ -464,3 +464,43 @@ export async function getProjectDetail(userId: string, projectId: string) {
     convertUsd: (usd: number) => convertFromUsd(usd, pricing.currency, pricing.usdToEurRate),
   };
 }
+
+export type OrgMemberStat = {
+  userId: string;
+  email: string;
+  joinedAt: Date;
+  currency: Currency;
+  monthMinutes: number;
+  monthAiCost: number;
+  monthTotalCost: number;
+};
+
+/**
+ * Admin-only rollup for enterprise mode. Reuses getDashboardData per member
+ * rather than re-deriving the aggregation — each member keeps their own
+ * rate/currency/pricing settings, so there's deliberately no cross-member
+ * currency conversion or combined grand total here (see plan notes).
+ */
+export async function getOrgMemberStats(
+  organizationId: string
+): Promise<OrgMemberStat[]> {
+  const members = await prisma.user.findMany({
+    where: { organizationId },
+    orderBy: { createdAt: "asc" },
+  });
+
+  return Promise.all(
+    members.map(async (member) => {
+      const data = await getDashboardData(member.id);
+      return {
+        userId: member.id,
+        email: member.email,
+        joinedAt: member.createdAt,
+        currency: data.currency,
+        monthMinutes: data.totalMonthMinutes,
+        monthAiCost: data.totalMonthAiCost,
+        monthTotalCost: data.totalMonthCost,
+      };
+    })
+  );
+}

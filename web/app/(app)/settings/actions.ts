@@ -5,6 +5,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { apiKeyDisplayPrefix, generateApiKey, hashApiKey } from "@/lib/api-key";
+import { emailDomain, isEligibleForEnterpriseMode } from "@/lib/organization";
 
 export async function regenerateApiKeyAction(): Promise<{ apiKey: string }> {
   const session = await auth();
@@ -156,4 +157,49 @@ export async function updateCurrencyAction(formData: FormData) {
 
   revalidatePath("/settings");
   revalidatePath("/dashboard");
+}
+
+export async function enableEnterpriseModeAction() {
+  const session = await auth();
+  if (!session?.user) {
+    throw new Error("Unauthorized");
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } });
+  if (!user) throw new Error("Unauthorized");
+  if (user.organizationId) return;
+  if (!isEligibleForEnterpriseMode(user.email)) return;
+
+  const domain = emailDomain(user.email);
+
+  const existing = await prisma.organization.findUnique({ where: { domain } });
+  if (existing) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { organizationId: existing.id },
+    });
+    revalidatePath("/settings");
+    return;
+  }
+
+  const org = await prisma.organization.create({
+    data: { domain, name: domain, ownerId: user.id },
+  });
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { organizationId: org.id },
+  });
+
+  // Pull in teammates who registered at this domain before the org existed.
+  await prisma.user.updateMany({
+    where: {
+      email: { endsWith: `@${domain}`, mode: "insensitive" },
+      organizationId: null,
+      id: { not: user.id },
+    },
+    data: { organizationId: org.id },
+  });
+
+  revalidatePath("/settings");
 }

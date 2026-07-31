@@ -41,6 +41,24 @@ model User {
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
   projects         Project[]
+
+  organizationId    String?
+  organization      Organization? @relation("OrganizationMembers", fields: [organizationId], references: [id])
+  ownedOrganization Organization? @relation("OrganizationOwner")
+}
+
+/// A company-domain team. Membership auto-joins by email domain; each member
+/// keeps their own rate/currency/pricing/budget settings and their own
+/// private projects — this only adds an admin-visible rollup, it doesn't
+/// change Project/Session ownership at all.
+model Organization {
+  id        String   @id @default(cuid())
+  domain    String   @unique
+  name      String
+  ownerId   String   @unique
+  owner     User     @relation("OrganizationOwner", fields: [ownerId], references: [id])
+  createdAt DateTime @default(now())
+  members   User[]   @relation("OrganizationMembers")
 }
 
 model Project {
