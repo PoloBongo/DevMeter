@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth, signOutAction } from "@/lib/auth";
 import { NavLinks } from "@/components/nav-links";
 import { ToastProvider } from "@/components/toast-provider";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default async function AppLayout({
   children,
@@ -32,6 +33,7 @@ export default async function AppLayout({
             <NavLinks />
           </div>
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <div
               className="flex h-7 w-7 items-center justify-center rounded-full border border-border bg-surface-2 text-xs font-semibold text-foreground-secondary"
               title={session.user.email ?? undefined}

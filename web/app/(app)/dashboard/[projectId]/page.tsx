@@ -98,7 +98,7 @@ export default async function ProjectDetailPage({
         <div className="flex items-center gap-2">
           <a
             href={`/api/projects/${projectId}/sessions/export?${exportParams.toString()}`}
-            className="rounded-lg border border-border px-3.5 py-2 text-[13px] text-foreground hover:bg-white/[0.03]"
+            className="rounded-lg border border-border px-3.5 py-2 text-[13px] text-foreground hover:bg-overlay-hover"
           >
             Export CSV
           </a>
@@ -175,7 +175,7 @@ export default async function ProjectDetailPage({
             className={`rounded-lg border border-border px-3 py-1.5 ${
               currentPage <= 1
                 ? "pointer-events-none text-dim"
-                : "text-foreground hover:bg-white/[0.03]"
+                : "text-foreground hover:bg-overlay-hover"
             }`}
           >
             ← Prev
@@ -189,7 +189,7 @@ export default async function ProjectDetailPage({
             className={`rounded-lg border border-border px-3 py-1.5 ${
               currentPage >= totalPages
                 ? "pointer-events-none text-dim"
-                : "text-foreground hover:bg-white/[0.03]"
+                : "text-foreground hover:bg-overlay-hover"
             }`}
           >
             Next →

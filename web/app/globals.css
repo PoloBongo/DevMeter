@@ -11,6 +11,50 @@
   --muted: #9aa0a6;
   --dim: #5b6168;
   --accent: #3ee08a;
+  --overlay-hover: rgba(255, 255, 255, 0.02);
+  --nested-bg: rgba(255, 255, 255, 0.015);
+  --error-bg: rgba(26, 17, 18, 0.95);
+  --error-border: rgba(239, 68, 68, 0.3);
+  --error-text: #f87171;
+}
+
+/* Explicit toggle (see components/theme-toggle.tsx) always wins over OS preference. */
+:root[data-theme="light"] {
+  --background: #ffffff;
+  --surface: #f7f8f9;
+  --surface-2: #eef0f2;
+  --nav: #ffffff;
+  --border: rgba(0, 0, 0, 0.09);
+  --foreground: #14161a;
+  --foreground-secondary: #3a3f45;
+  --muted: #6b7178;
+  --dim: #9aa0a6;
+  --accent: #15803d;
+  --overlay-hover: rgba(0, 0, 0, 0.035);
+  --nested-bg: rgba(0, 0, 0, 0.02);
+  --error-bg: rgba(254, 242, 242, 0.95);
+  --error-border: rgba(220, 38, 38, 0.35);
+  --error-text: #b91c1c;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]):not([data-theme="light"]) {
+    --background: #ffffff;
+    --surface: #f7f8f9;
+    --surface-2: #eef0f2;
+    --nav: #ffffff;
+    --border: rgba(0, 0, 0, 0.09);
+    --foreground: #14161a;
+    --foreground-secondary: #3a3f45;
+    --muted: #6b7178;
+    --dim: #9aa0a6;
+    --accent: #15803d;
+    --overlay-hover: rgba(0, 0, 0, 0.035);
+    --nested-bg: rgba(0, 0, 0, 0.02);
+    --error-bg: rgba(254, 242, 242, 0.95);
+    --error-border: rgba(220, 38, 38, 0.35);
+    --error-text: #b91c1c;
+  }
 }
 
 @theme inline {
@@ -24,6 +68,11 @@
   --color-muted: var(--muted);
   --color-dim: var(--dim);
   --color-accent: var(--accent);
+  --color-overlay-hover: var(--overlay-hover);
+  --color-nested-bg: var(--nested-bg);
+  --color-error-bg: var(--error-bg);
+  --color-error-border: var(--error-border);
+  --color-error-text: var(--error-text);
   --font-sans: var(--font-plex-sans);
   --font-mono: var(--font-plex-mono);
 }

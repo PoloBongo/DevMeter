@@ -57,7 +57,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 : "translate-y-2 opacity-0"
             } ${
               t.type === "error"
-                ? "border-red-500/30 bg-[#1a1112]/95 text-red-400"
+                ? "border-error-border bg-error-bg text-error-text"
                 : "border-accent/30 bg-surface/95 text-foreground"
             }`}
           >

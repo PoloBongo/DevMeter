@@ -44,19 +44,19 @@ function MiniAreaChart({
               </linearGradient>
             </defs>
             <CartesianGrid
-              stroke="rgba(255,255,255,0.06)"
+              stroke="var(--border)"
               vertical={false}
             />
             <XAxis
               dataKey="date"
-              tick={{ fill: "#5b6168", fontSize: 11, fontFamily: "var(--font-mono)" }}
-              axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
+              tick={{ fill: "var(--dim)", fontSize: 11, fontFamily: "var(--font-mono)" }}
+              axisLine={{ stroke: "var(--border)" }}
               tickLine={false}
               tickFormatter={(value: string) => value.slice(5)}
               minTickGap={40}
             />
             <YAxis
-              tick={{ fill: "#5b6168", fontSize: 11, fontFamily: "var(--font-mono)" }}
+              tick={{ fill: "var(--dim)", fontSize: 11, fontFamily: "var(--font-mono)" }}
               axisLine={false}
               tickLine={false}
               width={36}
@@ -65,13 +65,13 @@ function MiniAreaChart({
               formatter={(value) => formatValue(Number(value))}
               labelFormatter={(label) => String(label)}
               contentStyle={{
-                background: "#15181c",
-                border: "1px solid rgba(255,255,255,0.1)",
+                background: "var(--surface-2)",
+                border: "1px solid var(--border)",
                 borderRadius: 8,
                 fontSize: 12,
               }}
-              labelStyle={{ color: "#9aa0a6" }}
-              itemStyle={{ color: "#e8eaed" }}
+              labelStyle={{ color: "var(--muted)" }}
+              itemStyle={{ color: "var(--foreground)" }}
             />
             <Area
               type="monotone"
@@ -100,14 +100,14 @@ export function UsageChart({
         title="Hours logged"
         data={data}
         dataKey="hours"
-        color="#9aa0a6"
+        color="var(--muted)"
         formatValue={(v) => `${v.toFixed(1)}h`}
       />
       <MiniAreaChart
         title="AI cost"
         data={data}
         dataKey="aiCost"
-        color="#3ee08a"
+        color="var(--accent)"
         formatValue={(v) => formatMoney(v, currency)}
       />
     </div>

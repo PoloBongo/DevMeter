@@ -105,7 +105,7 @@ export default async function DashboardPage({
             <Link
               key={project.id}
               href={`/dashboard/${project.id}`}
-              className="grid grid-cols-[2.2fr_1.3fr_1fr_1fr_1fr] items-center px-5.5 py-3.5 border-b border-border/60 last:border-b-0 hover:bg-white/[0.02]"
+              className="grid grid-cols-[2.2fr_1.3fr_1fr_1fr_1fr] items-center px-5.5 py-3.5 border-b border-border/60 last:border-b-0 hover:bg-overlay-hover"
             >
               <div className="flex flex-col gap-0.5">
                 <span className="text-[13.5px] font-medium">

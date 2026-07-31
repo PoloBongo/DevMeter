@@ -65,7 +65,7 @@ function SingleSessionRow({
 }) {
   return (
     <div
-      className={`${GRID} px-5.5 py-3.5 border-b border-border/60 last:border-b-0 ${nested ? "bg-white/[0.015]" : ""}`}
+      className={`${GRID} px-5.5 py-3.5 border-b border-border/60 last:border-b-0 ${nested ? "bg-nested-bg" : ""}`}
     >
       <span className="font-mono text-[12.5px] text-muted">
         {nested
@@ -118,7 +118,7 @@ function DayGroupRow({
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className={`${GRID} w-full px-5.5 py-3.5 border-b border-border/60 last:border-b-0 text-left cursor-pointer hover:bg-white/[0.02]`}
+        className={`${GRID} w-full px-5.5 py-3.5 border-b border-border/60 last:border-b-0 text-left cursor-pointer hover:bg-overlay-hover`}
       >
         <span className="font-mono text-[12.5px] text-muted flex items-center gap-1.5">
           <span className={`inline-block transition-transform ${expanded ? "rotate-90" : ""}`}>
