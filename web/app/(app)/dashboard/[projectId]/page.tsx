@@ -1,25 +1,33 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { filterSessions, getProjectDetail, sessionMinutes } from "@/lib/queries";
-import { formatDuration, formatTokens } from "@/lib/format";
+import {
+  filterSessions,
+  getProjectDetail,
+  groupSessionsByDay,
+  sessionMinutes,
+  type SessionRowData,
+} from "@/lib/queries";
+import { formatDuration } from "@/lib/format";
 import { formatMoney } from "@/lib/currency";
 import { ProjectFilters } from "@/components/project-filters";
 import { ProjectClientForm } from "@/components/project-client-form";
 import { DeleteProjectButton } from "@/components/delete-project-button";
-import { DeleteSessionButton } from "@/components/delete-session-button";
+import { SessionTable } from "@/components/session-table";
 import { ToastFromQuery } from "@/components/toast-from-query";
+
+const DAYS_PER_PAGE = 10;
 
 export default async function ProjectDetailPage({
   params,
   searchParams,
 }: {
   params: Promise<{ projectId: string }>;
-  searchParams: Promise<{ range?: string; q?: string }>;
+  searchParams: Promise<{ range?: string; q?: string; page?: string }>;
 }) {
   const session = await auth();
   const { projectId } = await params;
-  const { range, q } = await searchParams;
+  const { range, q, page } = await searchParams;
 
   const detail = await getProjectDetail(session!.user.id, projectId);
   if (!detail) notFound();
@@ -29,6 +37,37 @@ export default async function ProjectDetailPage({
     range: normalizedRange,
     q,
   });
+
+  const rows: SessionRowData[] = filtered.map((s) => ({
+    id: s.id,
+    startedAt: s.startedAt.toISOString(),
+    ticketRef: s.ticketRef,
+    gitBranch: s.gitBranch,
+    durationMinutes: sessionMinutes(s),
+    tokensInput: s.tokensInput,
+    tokensOutput: s.tokensOutput,
+    tokensCacheRead: s.tokensCacheRead,
+    tokensCacheCreation: s.tokensCacheCreation,
+    cost: detail.sessionCost(s),
+    paygCost: detail.sessionCostPaygEquivalent(s),
+  }));
+
+  const dayGroups = groupSessionsByDay(rows);
+  const totalPages = Math.max(1, Math.ceil(dayGroups.length / DAYS_PER_PAGE));
+  const currentPage = Math.min(Math.max(1, Number(page) || 1), totalPages);
+  const pagedGroups = dayGroups.slice(
+    (currentPage - 1) * DAYS_PER_PAGE,
+    currentPage * DAYS_PER_PAGE
+  );
+
+  const pageHref = (targetPage: number) => {
+    const params = new URLSearchParams();
+    params.set("range", normalizedRange);
+    if (q) params.set("q", q);
+    if (targetPage > 1) params.set("page", String(targetPage));
+    const query = params.toString();
+    return query ? `?${query}` : "";
+  };
 
   const exportParams = new URLSearchParams();
   exportParams.set("range", normalizedRange);
@@ -120,50 +159,43 @@ export default async function ProjectDetailPage({
           </div>
         )}
 
-        {filtered.map((s) => (
-          <div
-            key={s.id}
-            className="grid grid-cols-[1fr_1.8fr_0.9fr_1.1fr_0.9fr_auto] items-center px-5.5 py-3.5 border-b border-border/60 last:border-b-0"
-          >
-            <span className="font-mono text-[12.5px] text-muted">
-              {s.startedAt.toLocaleDateString()}
-            </span>
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[13px]">{s.ticketRef ?? "—"}</span>
-              <span className="font-mono text-[11.5px] text-dim">
-                {s.gitBranch ?? "—"}
-              </span>
-            </div>
-            <span className="font-mono text-[13px]">
-              {formatDuration(sessionMinutes(s))}
-            </span>
-            <div className="font-mono text-[13px] text-muted">
-              {formatTokens(
-                s.tokensInput + s.tokensOutput + s.tokensCacheRead + s.tokensCacheCreation
-              )}
-              {(s.tokensCacheRead > 0 || s.tokensCacheCreation > 0) && (
-                <div className="text-[10.5px] text-dim">
-                  {formatTokens(s.tokensInput)} in · {formatTokens(s.tokensOutput)} out ·{" "}
-                  {formatTokens(s.tokensCacheRead)} cache read ·{" "}
-                  {formatTokens(s.tokensCacheCreation)} cache write
-                </div>
-              )}
-            </div>
-            <div className="font-mono text-[13px] text-accent">
-              {formatMoney(detail.sessionCost(s), detail.currency)}
-              {showPaygHint &&
-                Math.round(detail.sessionCostPaygEquivalent(s) * 100) !==
-                  Math.round(detail.sessionCost(s) * 100) && (
-                  <div className="text-[10.5px] text-dim">
-                    ≈ {formatMoney(detail.sessionCostPaygEquivalent(s), detail.currency)}{" "}
-                    payg
-                  </div>
-                )}
-            </div>
-            <DeleteSessionButton sessionId={s.id} projectId={detail.project.id} />
-          </div>
-        ))}
+        <SessionTable
+          dayGroups={pagedGroups}
+          projectId={detail.project.id}
+          currency={detail.currency}
+          showPaygHint={showPaygHint}
+        />
       </div>
+
+      {totalPages > 1 && (
+        <div className="mt-3.5 flex items-center justify-center gap-3 text-[13px]">
+          <Link
+            href={pageHref(currentPage - 1)}
+            aria-disabled={currentPage <= 1}
+            className={`rounded-lg border border-border px-3 py-1.5 ${
+              currentPage <= 1
+                ? "pointer-events-none text-dim"
+                : "text-foreground hover:bg-white/[0.03]"
+            }`}
+          >
+            ← Prev
+          </Link>
+          <span className="text-muted">
+            Page {currentPage} of {totalPages}
+          </span>
+          <Link
+            href={pageHref(currentPage + 1)}
+            aria-disabled={currentPage >= totalPages}
+            className={`rounded-lg border border-border px-3 py-1.5 ${
+              currentPage >= totalPages
+                ? "pointer-events-none text-dim"
+                : "text-foreground hover:bg-white/[0.03]"
+            }`}
+          >
+            Next →
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

@@ -288,6 +288,43 @@ export function filterSessions(
   return result;
 }
 
+/** Plain, client-safe view of a session — functions (sessionCost, etc.) can't cross the server/client boundary. */
+export type SessionRowData = {
+  id: string;
+  startedAt: string;
+  ticketRef: string | null;
+  gitBranch: string | null;
+  durationMinutes: number;
+  tokensInput: number;
+  tokensOutput: number;
+  tokensCacheRead: number;
+  tokensCacheCreation: number;
+  cost: number;
+  paygCost: number;
+};
+
+export type SessionDayGroup = {
+  dateKey: string;
+  sessions: SessionRowData[];
+};
+
+/** Groups same-calendar-day sessions together, preserving the desc-by-startedAt order rows already arrive in. */
+export function groupSessionsByDay(rows: SessionRowData[]): SessionDayGroup[] {
+  const order: string[] = [];
+  const byDay = new Map<string, SessionRowData[]>();
+  for (const row of rows) {
+    const dateKey = new Date(row.startedAt).toLocaleDateString("en-CA");
+    let bucket = byDay.get(dateKey);
+    if (!bucket) {
+      bucket = [];
+      byDay.set(dateKey, bucket);
+      order.push(dateKey);
+    }
+    bucket.push(row);
+  }
+  return order.map((dateKey) => ({ dateKey, sessions: byDay.get(dateKey)! }));
+}
+
 export async function getProjectDetail(userId: string, projectId: string) {
   const project = await prisma.project.findFirst({
     where: { id: projectId, userId },
