@@ -34,6 +34,8 @@ model User {
   hoursPerDay      Decimal     @default(7) @db.Decimal(4, 1)
   pricingMode      PricingMode @default(PAYG)
   subscriptionCost Decimal?    @db.Decimal(10, 2)
+  /// Monthly AI-cost budget in the user's display currency; null = no budget alert.
+  budgetAmount     Decimal?    @db.Decimal(10, 2)
   apiKeyHash       String?     @unique
   apiKeyPrefix     String?
   createdAt        DateTime    @default(now())
@@ -68,6 +70,8 @@ model Session {
   tokensCacheRead     Int       @default(0)
   tokensCacheCreation Int       @default(0)
   estimatedCostUsd    Decimal   @default(0) @db.Decimal(10, 4)
+  /// Per-model {input, output, cacheRead, cacheCreation, costUsd} breakdown; null for sessions synced before this field existed.
+  modelBreakdown      Json?
   createdAt           DateTime  @default(now())
 
   @@index([projectId])

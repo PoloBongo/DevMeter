@@ -96,6 +96,31 @@ function computeBreakEven(
   };
 }
 
+export type Budget = {
+  amount: number;
+  spent: number;
+  percentUsed: number;
+};
+
+/** Always account-wide (allMonthSessions), independent of the dashboard's project/client filter — a budget isn't scoped to one project. */
+function computeBudget(
+  pricing: Pricing,
+  budgetAmount: number | null,
+  allMonthSessions: Pick<
+    Session,
+    "tokensInput" | "tokensOutput" | "tokensCacheRead" | "tokensCacheCreation" | "estimatedCostUsd"
+  >[]
+): Budget | null {
+  if (budgetAmount === null || budgetAmount <= 0) return null;
+
+  const spent = allMonthSessions.reduce(
+    (sum, s) => sum + effectiveSessionCost(s, pricing),
+    0
+  );
+
+  return { amount: budgetAmount, spent, percentUsed: (spent / budgetAmount) * 100 };
+}
+
 export type DailyPoint = {
   date: string;
   hours: number;
@@ -239,6 +264,11 @@ export async function getDashboardData(
     clientOptions,
     projectSummaries,
     breakEven: computeBreakEven(pricing, allMonthSessions),
+    budget: computeBudget(
+      pricing,
+      user.budgetAmount ? Number(user.budgetAmount) : null,
+      allMonthSessions
+    ),
     totalMonthMinutes: projectSummaries.reduce(
       (sum, p) => sum + p.monthMinutes,
       0
@@ -288,6 +318,42 @@ export function filterSessions(
   return result;
 }
 
+export type ModelCostBucket = {
+  input: number;
+  output: number;
+  cacheRead: number;
+  cacheCreation: number;
+  costUsd: number;
+};
+
+/** Prisma's Json column comes back as `unknown` — validate the shape the collector writes rather than trust it blindly. */
+export function parseModelBreakdown(
+  value: unknown
+): Record<string, ModelCostBucket> | null {
+  if (typeof value !== "object" || value === null) return null;
+  const result: Record<string, ModelCostBucket> = {};
+  for (const [model, bucket] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof bucket !== "object" || bucket === null) continue;
+    const b = bucket as Record<string, unknown>;
+    if (
+      typeof b.input === "number" &&
+      typeof b.output === "number" &&
+      typeof b.cacheRead === "number" &&
+      typeof b.cacheCreation === "number" &&
+      typeof b.costUsd === "number"
+    ) {
+      result[model] = {
+        input: b.input,
+        output: b.output,
+        cacheRead: b.cacheRead,
+        cacheCreation: b.cacheCreation,
+        costUsd: b.costUsd,
+      };
+    }
+  }
+  return Object.keys(result).length > 0 ? result : null;
+}
+
 /** Plain, client-safe view of a session — functions (sessionCost, etc.) can't cross the server/client boundary. */
 export type SessionRowData = {
   id: string;
@@ -301,6 +367,8 @@ export type SessionRowData = {
   tokensCacheCreation: number;
   cost: number;
   paygCost: number;
+  /** Per-model share of `cost`, already converted to the display currency — only set when a session used >1 model. */
+  modelCosts: { model: string; cost: number }[] | null;
 };
 
 export type SessionDayGroup = {
@@ -393,5 +461,6 @@ export async function getProjectDetail(userId: string, projectId: string) {
     sessionCost: (session: Session) => effectiveSessionCost(session, pricing),
     sessionCostPaygEquivalent: (session: Session) =>
       convertFromUsd(paygEquivalentUsd(session), pricing.currency, pricing.usdToEurRate),
+    convertUsd: (usd: number) => convertFromUsd(usd, pricing.currency, pricing.usdToEurRate),
   };
 }

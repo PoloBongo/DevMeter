@@ -20,7 +20,7 @@ export default async function AppLayout({
   return (
     <ToastProvider>
       <div className="flex flex-1 flex-col">
-        <div className="flex h-14 items-center justify-between border-b border-border bg-nav px-7">
+        <div className="flex h-14 items-center justify-between border-b border-border bg-nav px-7 print:hidden">
           <div className="flex items-center gap-8">
             <Link href="/dashboard" className="flex items-center gap-2.5">
               <div className="flex h-5.5 w-5.5 items-center justify-center rounded-[5px] bg-accent">

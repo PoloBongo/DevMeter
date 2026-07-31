@@ -17,11 +17,13 @@ function CostCell({
   paygCost,
   currency,
   showPaygHint,
+  modelCosts,
 }: {
   cost: number;
   paygCost: number;
   currency: Currency;
   showPaygHint: boolean;
+  modelCosts?: { model: string; cost: number }[] | null;
 }) {
   return (
     <div className="font-mono text-[13px] text-accent">
@@ -29,6 +31,13 @@ function CostCell({
       {showPaygHint && Math.round(paygCost * 100) !== Math.round(cost * 100) && (
         <div className="text-[10.5px] text-dim">
           ≈ {formatMoney(paygCost, currency)} payg
+        </div>
+      )}
+      {modelCosts && modelCosts.length > 1 && (
+        <div className="text-[10.5px] text-dim">
+          {modelCosts
+            .map(({ model, cost: modelCost }) => `${model}: ${formatMoney(modelCost, currency)}`)
+            .join(" · ")}
         </div>
       )}
     </div>
@@ -78,7 +87,13 @@ function SingleSessionRow({
       </div>
       <span className="font-mono text-[13px]">{formatDuration(row.durationMinutes)}</span>
       <TokensCell row={row} />
-      <CostCell cost={row.cost} paygCost={row.paygCost} currency={currency} showPaygHint={showPaygHint} />
+      <CostCell
+        cost={row.cost}
+        paygCost={row.paygCost}
+        currency={currency}
+        showPaygHint={showPaygHint}
+        modelCosts={row.modelCosts}
+      />
       <DeleteSessionButton sessionId={row.id} projectId={projectId} />
     </div>
   );

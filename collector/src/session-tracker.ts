@@ -17,6 +17,11 @@ interface TokenBucket {
   cacheCreation: number;
 }
 
+export type ModelBreakdown = Record<
+  string,
+  TokenBucket & { costUsd: number }
+>;
+
 export class SessionTracker {
   private sessionId: string;
   private readonly cwd: string;
@@ -50,20 +55,36 @@ export class SessionTracker {
     this.scheduleIdleFlush();
   }
 
+  private modelBreakdown(): ModelBreakdown {
+    const breakdown: ModelBreakdown = {};
+    for (const [model, bucket] of this.tokensByModel) {
+      breakdown[model] = { ...bucket, costUsd: estimateCostUsd(model, bucket) };
+    }
+    return breakdown;
+  }
+
   private totals() {
     let tokensInput = 0;
     let tokensOutput = 0;
     let tokensCacheRead = 0;
     let tokensCacheCreation = 0;
     let estimatedCostUsd = 0;
-    for (const [model, bucket] of this.tokensByModel) {
+    const modelBreakdown = this.modelBreakdown();
+    for (const bucket of Object.values(modelBreakdown)) {
       tokensInput += bucket.input;
       tokensOutput += bucket.output;
       tokensCacheRead += bucket.cacheRead;
       tokensCacheCreation += bucket.cacheCreation;
-      estimatedCostUsd += estimateCostUsd(model, bucket);
+      estimatedCostUsd += bucket.costUsd;
     }
-    return { tokensInput, tokensOutput, tokensCacheRead, tokensCacheCreation, estimatedCostUsd };
+    return {
+      tokensInput,
+      tokensOutput,
+      tokensCacheRead,
+      tokensCacheCreation,
+      estimatedCostUsd,
+      modelBreakdown,
+    };
   }
 
   private writeStatus(): void {

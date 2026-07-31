@@ -5,6 +5,7 @@ import {
   filterSessions,
   getProjectDetail,
   groupSessionsByDay,
+  parseModelBreakdown,
   sessionMinutes,
   type SessionRowData,
 } from "@/lib/queries";
@@ -50,6 +51,14 @@ export default async function ProjectDetailPage({
     tokensCacheCreation: s.tokensCacheCreation,
     cost: detail.sessionCost(s),
     paygCost: detail.sessionCostPaygEquivalent(s),
+    modelCosts: (() => {
+      const breakdown = parseModelBreakdown(s.modelBreakdown);
+      if (!breakdown || Object.keys(breakdown).length < 2) return null;
+      return Object.entries(breakdown).map(([model, bucket]) => ({
+        model,
+        cost: detail.convertUsd(bucket.costUsd),
+      }));
+    })(),
   }));
 
   const dayGroups = groupSessionsByDay(rows);
@@ -96,6 +105,12 @@ export default async function ProjectDetailPage({
           />
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href={`/dashboard/${projectId}/invoice?${exportParams.toString()}`}
+            className="rounded-lg border border-border px-3.5 py-2 text-[13px] text-foreground hover:bg-overlay-hover"
+          >
+            Invoice
+          </Link>
           <a
             href={`/api/projects/${projectId}/sessions/export?${exportParams.toString()}`}
             className="rounded-lg border border-border px-3.5 py-2 text-[13px] text-foreground hover:bg-overlay-hover"

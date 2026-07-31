@@ -24,6 +24,13 @@ export function statusCommand(): void {
         `${status.tokensCacheRead} cache read / ${status.tokensCacheCreation} cache write`
     );
     console.log(`Est. cost: $${status.estimatedCostUsd.toFixed(4)}`);
+    const models = Object.entries(status.modelBreakdown ?? {});
+    if (models.length > 1) {
+      const byModel = models
+        .map(([model, b]) => `${model}: $${b.costUsd.toFixed(4)}`)
+        .join(" / ");
+      console.log(`By model:  ${byModel}`);
+    }
     console.log("");
   }
 }

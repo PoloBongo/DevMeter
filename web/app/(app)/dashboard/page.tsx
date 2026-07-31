@@ -6,6 +6,7 @@ import { formatMoney } from "@/lib/currency";
 import { UsageChart } from "@/components/usage-chart";
 import { AddProjectForm } from "@/components/add-project-form";
 import { BreakEvenBanner } from "@/components/break-even-banner";
+import { BudgetBanner } from "@/components/budget-banner";
 import { DashboardFilters } from "@/components/dashboard-filters";
 import { ToastFromQuery } from "@/components/toast-from-query";
 
@@ -31,6 +32,12 @@ export default async function DashboardPage({
         <h1 className="text-xl font-semibold tracking-tight">Dashboard</h1>
         <AddProjectForm />
       </div>
+
+      {data.budget && (
+        <div className="mb-5">
+          <BudgetBanner budget={data.budget} currency={data.currency} />
+        </div>
+      )}
 
       {data.breakEven && (
         <div className="mb-5">

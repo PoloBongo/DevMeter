@@ -106,6 +106,34 @@ export async function updatePricingModeAction(formData: FormData) {
   revalidatePath("/settings");
 }
 
+const budgetSchema = z.object({
+  budgetAmount: z.coerce.number().min(0).max(1000000).optional(),
+});
+
+export async function updateBudgetAction(formData: FormData) {
+  const session = await auth();
+  if (!session?.user) {
+    throw new Error("Unauthorized");
+  }
+
+  const enabled = formData.get("budgetEnabled") === "on";
+  const raw = formData.get("budgetAmount");
+  const parsed = budgetSchema.safeParse({
+    budgetAmount: enabled && raw ? raw : undefined,
+  });
+  if (!parsed.success) return;
+
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: {
+      budgetAmount: enabled ? (parsed.data.budgetAmount ?? 0) : null,
+    },
+  });
+
+  revalidatePath("/settings");
+  revalidatePath("/dashboard");
+}
+
 const currencySchema = z.object({
   currency: z.enum(["USD", "EUR"]),
 });

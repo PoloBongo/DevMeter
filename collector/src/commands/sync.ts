@@ -39,6 +39,9 @@ export async function syncCommand(): Promise<void> {
         tokensCacheRead: entry.tokensCacheRead,
         tokensCacheCreation: entry.tokensCacheCreation,
         estimatedCostUsd: entry.estimatedCostUsd,
+        // Defensive fallback: a status.json entry written by a collector
+        // process still running the pre-modelBreakdown code won't have it.
+        modelBreakdown: entry.modelBreakdown ?? {},
       });
       console.log(`Synced ${entry.cwd}`);
     } catch (error) {

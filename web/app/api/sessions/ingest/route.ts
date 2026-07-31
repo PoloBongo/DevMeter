@@ -3,6 +3,14 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { hashApiKey } from "@/lib/api-key";
 
+const modelBucketSchema = z.object({
+  input: z.number().int().min(0),
+  output: z.number().int().min(0),
+  cacheRead: z.number().int().min(0),
+  cacheCreation: z.number().int().min(0),
+  costUsd: z.number().min(0),
+});
+
 const ingestSchema = z.object({
   clientSessionId: z.string().trim().min(1).max(200).optional(),
   projectName: z.string().trim().min(1).max(120),
@@ -16,6 +24,8 @@ const ingestSchema = z.object({
   tokensCacheRead: z.number().int().min(0).default(0),
   tokensCacheCreation: z.number().int().min(0).default(0),
   estimatedCostUsd: z.number().min(0),
+  // Optional so older collector builds (pre-2026-07-31) still ingest fine.
+  modelBreakdown: z.record(z.string(), modelBucketSchema).optional(),
 });
 
 function extractApiKey(request: Request): string | null {
@@ -79,6 +89,7 @@ export async function POST(request: Request) {
     tokensCacheRead: data.tokensCacheRead,
     tokensCacheCreation: data.tokensCacheCreation,
     estimatedCostUsd: data.estimatedCostUsd,
+    modelBreakdown: data.modelBreakdown ?? undefined,
   };
 
   // A clientSessionId lets the collector send periodic "session still in

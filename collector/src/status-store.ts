@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { STATUS_PATH, CONFIG_DIR } from "./config.ts";
+import type { ModelBreakdown } from "./session-tracker.ts";
 
 export interface StatusEntry {
   sessionId: string;
@@ -12,6 +13,7 @@ export interface StatusEntry {
   tokensCacheRead: number;
   tokensCacheCreation: number;
   estimatedCostUsd: number;
+  modelBreakdown: ModelBreakdown;
 }
 
 type StatusMap = Record<string, StatusEntry>;

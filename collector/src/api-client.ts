@@ -1,4 +1,5 @@
 import type { DevMeterConfig } from "./config.ts";
+import type { ModelBreakdown } from "./session-tracker.ts";
 
 export interface IngestPayload {
   clientSessionId: string;
@@ -13,6 +14,7 @@ export interface IngestPayload {
   tokensCacheRead: number;
   tokensCacheCreation: number;
   estimatedCostUsd: number;
+  modelBreakdown: ModelBreakdown;
 }
 
 export async function sendSession(

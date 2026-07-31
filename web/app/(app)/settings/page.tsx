@@ -3,6 +3,7 @@ import { ApiKeySection } from "@/components/api-key-section";
 import { HourlyRateForm } from "@/components/hourly-rate-form";
 import { PricingModeForm } from "@/components/pricing-mode-form";
 import { CurrencyForm } from "@/components/currency-form";
+import { BudgetForm } from "@/components/budget-form";
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -57,6 +58,18 @@ export default async function SettingsPage() {
           subscriptionCost={
             user.subscriptionCost ? Number(user.subscriptionCost) : null
           }
+          currency={user.currency}
+        />
+      </div>
+
+      <div className="mb-4.5 rounded-xl border border-border bg-surface p-5.5">
+        <div className="mb-1 text-[14.5px] font-semibold">Budget</div>
+        <p className="mb-4 text-[13px] leading-relaxed text-muted">
+          Optional monthly spending guardrail — account-wide, across all
+          projects.
+        </p>
+        <BudgetForm
+          budgetAmount={user.budgetAmount ? Number(user.budgetAmount) : null}
           currency={user.currency}
         />
       </div>
