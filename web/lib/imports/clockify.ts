@@ -47,7 +47,13 @@ function combine(datePart: Date, time: { hours: number; minutes: number }): Date
 
 async function parse(buffer: Buffer): Promise<ImportedEntry[]> {
   const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(buffer as unknown as ArrayBuffer);
+  try {
+    await workbook.xlsx.load(buffer as unknown as ArrayBuffer);
+  } catch {
+    throw new Error(
+      "Couldn't read that file as an .xlsx spreadsheet. Export the Clockify \"Detailed report\" as .xlsx (CSV isn't supported)."
+    );
+  }
   const sheet = workbook.worksheets[0];
   if (!sheet) throw new Error("The file has no worksheet.");
 

@@ -1,39 +1,27 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useState } from "react";
 
 type Theme = "dark" | "light";
 
-function subscribe(callback: () => void) {
-  const observer = new MutationObserver(callback);
-  observer.observe(document.documentElement, { attributeFilter: ["data-theme"] });
-  return () => observer.disconnect();
-}
-
-function getSnapshot(): Theme {
-  return document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
-}
-
-// Matches the default the rest of the app renders with before the
-// pre-hydration script (app/layout.tsx) has a chance to apply a stored
-// theme — keeps this component's first client render consistent with SSR.
-function getServerSnapshot(): Theme {
-  return "dark";
-}
-
 function applyTheme(theme: Theme) {
   document.documentElement.setAttribute("data-theme", theme);
-  localStorage.setItem("devmeter-theme", theme);
+  document.cookie = `devmeter-theme=${theme}; path=/; max-age=31536000; SameSite=Lax`;
 }
 
-export function ThemeToggle() {
-  const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+export function ThemeToggle({ initialTheme }: { initialTheme: Theme }) {
+  const [theme, setTheme] = useState<Theme>(initialTheme);
   const next: Theme = theme === "dark" ? "light" : "dark";
+
+  function toggle() {
+    applyTheme(next);
+    setTheme(next);
+  }
 
   return (
     <button
       type="button"
-      onClick={() => applyTheme(next)}
+      onClick={toggle}
       title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
       className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-border text-muted hover:text-foreground"
     >

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { NavLinks } from "@/components/nav-links";
 import { ToastProvider } from "@/components/toast-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { getTheme } from "@/lib/theme";
 
 export default async function AppLayout({
   children,
@@ -15,6 +16,8 @@ export default async function AppLayout({
   if (!session?.user) {
     redirect("/login");
   }
+
+  const theme = await getTheme();
 
   const initials = session.user.email?.slice(0, 2).toUpperCase() ?? "??";
   const ownsOrganization = Boolean(
@@ -40,7 +43,7 @@ export default async function AppLayout({
             <NavLinks showTeamLink={ownsOrganization} />
           </div>
           <div className="flex items-center gap-3">
-            <ThemeToggle />
+            <ThemeToggle initialTheme={theme} />
             <div
               className="flex h-7 w-7 items-center justify-center rounded-full border border-border bg-surface-2 text-xs font-semibold text-foreground-secondary"
               title={session.user.email ?? undefined}

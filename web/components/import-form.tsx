@@ -174,10 +174,13 @@ export function ImportForm({
           <input
             ref={fileInputRef}
             type="file"
-            accept=".xlsx,.csv"
+            accept=".xlsx"
             required
             className="text-[13px] text-foreground file:mr-3 file:cursor-pointer file:rounded-lg file:border file:border-border file:bg-surface-2 file:px-3 file:py-2 file:text-[13px] file:text-foreground"
           />
+          <span className="text-[11.5px] text-dim">
+            Export as .xlsx from Clockify&apos;s &quot;Detailed report&quot; (CSV isn&apos;t supported).
+          </span>
         </div>
 
         {error && <p className="text-[12.5px] text-error-text">{error}</p>}

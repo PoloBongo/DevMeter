@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { IMPORT_TEMPLATES } from "@/lib/imports";
@@ -5,8 +6,12 @@ import { ImportForm } from "@/components/import-form";
 
 export default async function ImportPage() {
   const session = await auth();
+  if (!session?.user) {
+    redirect("/login");
+  }
+
   const existingProjects = await prisma.project.findMany({
-    where: { userId: session!.user.id },
+    where: { userId: session.user.id },
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });
@@ -24,7 +29,10 @@ export default async function ImportPage() {
       </p>
 
       <div className="rounded-xl border border-border bg-surface p-5.5">
-        <ImportForm templates={IMPORT_TEMPLATES} existingProjects={existingProjects} />
+        <ImportForm
+          templates={IMPORT_TEMPLATES.map((t) => ({ id: t.id, label: t.label }))}
+          existingProjects={existingProjects}
+        />
       </div>
     </div>
   );
