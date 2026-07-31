@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import { Command } from "commander";
 import { loginCommand } from "./commands/login.ts";
 import { startCommand } from "./commands/start.ts";
@@ -6,12 +9,17 @@ import { statusCommand } from "./commands/status.ts";
 import { claudeCommand } from "./commands/claude.ts";
 import { syncCommand } from "./commands/sync.ts";
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const { version } = JSON.parse(
+  readFileSync(join(__dirname, "..", "package.json"), "utf-8")
+) as { version: string };
+
 const program = new Command();
 
 program
   .name("devmeter")
   .description("DevMeter local collector — tracks time and AI cost per session")
-  .version("0.1.0");
+  .version(version);
 
 program
   .command("login")

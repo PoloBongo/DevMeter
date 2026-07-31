@@ -64,12 +64,12 @@ database) once after the first deploy to apply migrations there too.
 Setting up a **new machine**? Paste [`SETUP_NEW_MACHINE.md`](SETUP_NEW_MACHINE.md)
 into a fresh Claude Code session there and it'll do the rest.
 
-One-time setup on a machine (never needs repeating after this):
+One-time setup on a machine (never needs repeating after this) — the
+collector is published on npm as [`devmeter-cli`](https://www.npmjs.com/package/devmeter-cli),
+no repo clone needed:
 
 ```bash
-cd collector
-npm install
-npm link                # exposes a global `devmeter` command
+npm install -g devmeter-cli
 devmeter login <api_key> --api-url https://<your-deployment>.vercel.app
 ```
 

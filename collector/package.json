@@ -1,18 +1,24 @@
 {
   "name": "devmeter-cli",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.1.1",
+  "description": "Local collector that tracks Claude Code time and AI token cost per project and reports it to a DevMeter dashboard.",
   "type": "module",
   "bin": {
-    "devmeter": "src/cli.ts"
+    "devmeter": "dist/cli.js"
   },
+  "files": [
+    "dist",
+    "pricing.json"
+  ],
   "engines": {
     "node": ">=22.6.0"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "node --test \"src/**/*.test.ts\"",
-    "start": "node src/cli.ts"
+    "start": "node src/cli.ts",
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
+    "prepack": "npm run build"
   },
   "dependencies": {
     "commander": "^13.1.0"
@@ -20,5 +26,21 @@
   "devDependencies": {
     "@types/node": "^22.10.0",
     "typescript": "^5.7.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PoloBongo/DevMeter.git",
+    "directory": "collector"
+  },
+  "homepage": "https://github.com/PoloBongo/DevMeter/tree/main/collector#readme",
+  "bugs": "https://github.com/PoloBongo/DevMeter/issues",
+  "keywords": [
+    "claude-code",
+    "time-tracking",
+    "ai-cost",
+    "cli",
+    "opentelemetry"
+  ],
+  "author": "PoloBongo",
+  "license": "MIT"
 }
