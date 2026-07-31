@@ -18,7 +18,7 @@ interface TokenBucket {
 }
 
 export class SessionTracker {
-  private readonly sessionId: string;
+  private sessionId: string;
   private readonly cwd: string;
   private readonly config: DevMeterConfig;
   private readonly onIdleFlush?: (cwd: string) => void;
@@ -146,10 +146,14 @@ export class SessionTracker {
 
     this.tokensByModel.clear();
     this.startedAt = new Date();
-    removeStatusEntry(this.cwd);
     // Tracker instances are reused across idle-flush cycles in `devmeter
-    // start` (keyed by cwd, kept alive for the life of the collector), so
-    // re-arm the periodic sync for whatever session comes next.
+    // start` (keyed by cwd, kept alive for the life of the collector). The
+    // final `sync()` above still used the outgoing sessionId, so it's safe
+    // to rotate it now — without this, the next work session would upsert
+    // onto the same clientSessionId and silently overwrite the row we just
+    // finalized instead of creating a new one.
+    this.sessionId = randomUUID();
+    removeStatusEntry(this.cwd);
     this.scheduleSync();
   }
 }
