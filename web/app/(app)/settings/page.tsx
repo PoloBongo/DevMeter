@@ -69,6 +69,10 @@ export default async function SettingsPage() {
           projects.
         </p>
         <BudgetForm
+          // Remounts on every successful save, so the checkbox/amount field
+          // always reflect the just-persisted value instead of whatever
+          // local state survived the form's native reset-on-success.
+          key={String(user.budgetAmount ?? "off")}
           budgetAmount={user.budgetAmount ? Number(user.budgetAmount) : null}
           currency={user.currency}
         />
