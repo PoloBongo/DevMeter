@@ -144,7 +144,8 @@ export default async function ProjectDetailPage({
               {(s.tokensCacheRead > 0 || s.tokensCacheCreation > 0) && (
                 <div className="text-[10.5px] text-dim">
                   {formatTokens(s.tokensInput)} in · {formatTokens(s.tokensOutput)} out ·{" "}
-                  {formatTokens(s.tokensCacheRead + s.tokensCacheCreation)} cache
+                  {formatTokens(s.tokensCacheRead)} cache read ·{" "}
+                  {formatTokens(s.tokensCacheCreation)} cache write
                 </div>
               )}
             </div>

@@ -3,6 +3,7 @@ import type { AddressInfo } from "node:net";
 import { requireConfig } from "../config.ts";
 import { SessionTracker } from "../session-tracker.ts";
 import { startOtelReceiver } from "../otel-receiver.ts";
+import { describeCodeVersion } from "../version.ts";
 
 /**
  * Claude Code does not propagate OTEL_RESOURCE_ATTRIBUTES into its OTLP
@@ -22,6 +23,7 @@ export function claudeCommand(args: string[]): void {
 
   server.once("listening", () => {
     const { port } = server.address() as AddressInfo;
+    console.error(`[devmeter] tracking this session — running from ${describeCodeVersion()}`);
 
     const env = {
       ...process.env,

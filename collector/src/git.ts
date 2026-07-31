@@ -15,10 +15,18 @@ export function getCurrentBranch(cwd: string): string | null {
   }
 }
 
+/**
+ * Two conventions in the wild: classic tracker IDs like `JIRA-123`, and this
+ * repo's own `feature/192-nom`, `add/192-nom`, `update/192-nom`,
+ * `delete/192-nom` (a type prefix, then a bare ticket number before the
+ * slug). Tried in that order; the numbered form is rendered as `#192`.
+ */
 export function extractTicketRef(branch: string | null): string | null {
   if (!branch) return null;
-  const match = branch.match(/[A-Z][A-Z0-9]+-\d+/);
-  return match ? match[0] : null;
+  const jiraStyle = branch.match(/[A-Z][A-Z0-9]+-\d+/);
+  if (jiraStyle) return jiraStyle[0];
+  const numbered = branch.match(/^(?:feature|add|update|delete)\/(\d+)-/i);
+  return numbered ? `#${numbered[1]}` : null;
 }
 
 export function getProjectName(cwd: string): string {

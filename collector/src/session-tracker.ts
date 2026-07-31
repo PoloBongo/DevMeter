@@ -78,7 +78,14 @@ export class SessionTracker {
     });
   }
 
-  /** Periodic push of the in-progress session so the dashboard doesn't stay empty for the whole session. */
+  /**
+   * Periodic push of the in-progress session so the dashboard doesn't stay
+   * empty for the whole session. Sent with `endedAt: now()` even though the
+   * session is still running, so `sessionMinutes()` reads as "elapsed as of
+   * the last sync" until the next sync (or idle-flush) catches it up — the
+   * displayed duration can lag up to SYNC_INTERVAL_MS behind reality for a
+   * session in progress.
+   */
   private scheduleSync(): void {
     this.syncTimer = setInterval(() => {
       void this.sync();

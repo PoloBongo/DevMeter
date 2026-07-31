@@ -1,6 +1,7 @@
 import { requireConfig } from "../config.ts";
 import { SessionTracker } from "../session-tracker.ts";
 import { startOtelReceiver } from "../otel-receiver.ts";
+import { describeCodeVersion } from "../version.ts";
 
 export async function startCommand(): Promise<void> {
   const config = requireConfig();
@@ -29,7 +30,11 @@ export async function startCommand(): Promise<void> {
     OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE: "delta",
   };
 
-  console.log("DevMeter collector listening on http://localhost:4318\n");
+  console.log("DevMeter collector listening on http://localhost:4318");
+  console.log(
+    `Running from ${describeCodeVersion()} — this process keeps this code ` +
+      "for its whole lifetime; restart it after a `git pull` to the collector.\n"
+  );
   console.log(
     "Recommended: from any project directory, run `devmeter claude` instead\n" +
       "of `claude` directly — it tags that session with its real directory,\n" +

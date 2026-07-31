@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import type { PricingMode, Session } from "@/generated/prisma/client";
-import { convertFromUsd, type Currency } from "@/lib/currency";
+import { convertFromUsd, getUsdToEurRate, type Currency } from "@/lib/currency";
 
 export type ProjectSummary = {
   id: string;
@@ -29,6 +29,7 @@ type Pricing = {
   currency: Currency;
   subscriptionCost: number;
   totalMonthTokens: number;
+  usdToEurRate: number;
 };
 
 function sessionTokens(
@@ -72,7 +73,7 @@ function effectiveSessionCost(
       pricing.subscriptionCost
     );
   }
-  return convertFromUsd(paygEquivalentUsd(session), pricing.currency);
+  return convertFromUsd(paygEquivalentUsd(session), pricing.currency, pricing.usdToEurRate);
 }
 
 function computeBreakEven(
@@ -83,7 +84,8 @@ function computeBreakEven(
 
   const paygEquivalent = convertFromUsd(
     monthSessions.reduce((sum, s) => sum + paygEquivalentUsd(s), 0),
-    pricing.currency
+    pricing.currency,
+    pricing.usdToEurRate
   );
 
   return {
@@ -148,14 +150,27 @@ function buildDailySeries(
 
 export async function getDashboardData(
   userId: string,
-  filter?: { projectId?: string }
+  filter?: { projectId?: string; client?: string }
 ) {
-  const user = await requireUser(userId);
+  const [user, usdToEurRate] = await Promise.all([
+    requireUser(userId),
+    getUsdToEurRate(),
+  ]);
   const allProjects = await prisma.project.findMany({
     where: { userId },
     orderBy: { createdAt: "desc" },
     include: { sessions: { orderBy: { startedAt: "desc" } } },
   });
+
+  // Always built from the full, unfiltered project list so the dropdown
+  // keeps every option regardless of what's currently selected.
+  const clientOptions = Array.from(
+    new Set(
+      allProjects
+        .map((p) => p.clientName)
+        .filter((name): name is string => Boolean(name))
+    )
+  ).sort((a, b) => a.localeCompare(b));
 
   const monthStart = startOfMonth(new Date());
   const hourlyRate = Number(user.hourlyRate);
@@ -174,11 +189,15 @@ export async function getDashboardData(
     currency: user.currency,
     subscriptionCost: Number(user.subscriptionCost ?? 0),
     totalMonthTokens,
+    usdToEurRate,
   };
 
-  const projects = filter?.projectId
+  let projects = filter?.projectId
     ? allProjects.filter((p) => p.id === filter.projectId)
     : allProjects;
+  if (filter?.client) {
+    projects = projects.filter((p) => p.clientName === filter.client);
+  }
 
   const projectSummaries: ProjectSummary[] = projects.map((project) => {
     const monthSessions = project.sessions.filter(
@@ -194,7 +213,8 @@ export async function getDashboardData(
     );
     const monthAiCostPaygEquivalent = convertFromUsd(
       monthSessions.reduce((sum, s) => sum + paygEquivalentUsd(s), 0),
-      pricing.currency
+      pricing.currency,
+      pricing.usdToEurRate
     );
 
     return {
@@ -216,6 +236,7 @@ export async function getDashboardData(
     hourlyRate,
     pricingMode: user.pricingMode,
     projectOptions: allProjects.map((p): ProjectOption => ({ id: p.id, name: p.name })),
+    clientOptions,
     projectSummaries,
     breakEven: computeBreakEven(pricing, allMonthSessions),
     totalMonthMinutes: projectSummaries.reduce(
@@ -275,7 +296,10 @@ export async function getProjectDetail(userId: string, projectId: string) {
 
   if (!project) return null;
 
-  const user = await requireUser(userId);
+  const [user, usdToEurRate] = await Promise.all([
+    requireUser(userId),
+    getUsdToEurRate(),
+  ]);
   const hourlyRate = Number(user.hourlyRate);
   const monthStart = startOfMonth(new Date());
 
@@ -299,6 +323,7 @@ export async function getProjectDetail(userId: string, projectId: string) {
     currency: user.currency,
     subscriptionCost: Number(user.subscriptionCost ?? 0),
     totalMonthTokens,
+    usdToEurRate,
   };
 
   const monthSessions = project.sessions.filter(
@@ -314,7 +339,8 @@ export async function getProjectDetail(userId: string, projectId: string) {
   );
   const monthAiCostPaygEquivalent = convertFromUsd(
     monthSessions.reduce((sum, s) => sum + paygEquivalentUsd(s), 0),
-    pricing.currency
+    pricing.currency,
+    pricing.usdToEurRate
   );
 
   return {
@@ -329,6 +355,6 @@ export async function getProjectDetail(userId: string, projectId: string) {
     sessionMinutes,
     sessionCost: (session: Session) => effectiveSessionCost(session, pricing),
     sessionCostPaygEquivalent: (session: Session) =>
-      convertFromUsd(paygEquivalentUsd(session), pricing.currency),
+      convertFromUsd(paygEquivalentUsd(session), pricing.currency, pricing.usdToEurRate),
   };
 }
