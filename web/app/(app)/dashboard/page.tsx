@@ -13,13 +13,13 @@ import { ToastFromQuery } from "@/components/toast-from-query";
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ project?: string; client?: string }>;
+  searchParams: Promise<{ project?: string; client?: string; source?: string }>;
 }) {
   const session = await auth();
   const userId = session!.user.id;
-  const { project, client } = await searchParams;
+  const { project, client, source } = await searchParams;
 
-  const data = await getDashboardData(userId, { projectId: project, client });
+  const data = await getDashboardData(userId, { projectId: project, client, source });
   const showPaygHint =
     data.pricingMode !== "PAYG" &&
     Math.round(data.totalMonthAiCostPaygEquivalent * 100) !==
@@ -84,6 +84,7 @@ export default async function DashboardPage({
         <DashboardFilters
           projects={data.projectOptions}
           clients={data.clientOptions}
+          sources={data.sourceOptions}
         />
       </div>
 

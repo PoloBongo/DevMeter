@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import type { PricingMode, Session } from "@/generated/prisma/client";
 import { convertFromUsd, getUsdToEurRate, type Currency } from "@/lib/currency";
+import { IMPORT_TEMPLATES } from "@/lib/imports";
 
 export type ProjectSummary = {
   id: string;
@@ -175,17 +176,35 @@ function buildDailySeries(
 
 export async function getDashboardData(
   userId: string,
-  filter?: { projectId?: string; client?: string }
+  filter?: { projectId?: string; client?: string; source?: string }
 ) {
   const [user, usdToEurRate] = await Promise.all([
     requireUser(userId),
     getUsdToEurRate(),
   ]);
-  const allProjects = await prisma.project.findMany({
+  let allProjects = await prisma.project.findMany({
     where: { userId },
     orderBy: { createdAt: "desc" },
     include: { sessions: { orderBy: { startedAt: "desc" } } },
   });
+
+  const hasImportedSessions = allProjects.some((p) =>
+    p.sessions.some((s) => s.source !== null)
+  );
+
+  // "native" means the collector's own untagged sessions (source is null);
+  // anything else matches an import template id (e.g. "clockify"). Applied
+  // to the sessions themselves, not the project list, so a project mixing
+  // native + imported time is still shown with just the matching sessions.
+  if (filter?.source) {
+    const wanted = filter.source;
+    allProjects = allProjects.map((project) => ({
+      ...project,
+      sessions: project.sessions.filter((s) =>
+        wanted === "native" ? s.source === null : s.source === wanted
+      ),
+    }));
+  }
 
   // Always built from the full, unfiltered project list so the dropdown
   // keeps every option regardless of what's currently selected.
@@ -262,6 +281,12 @@ export async function getDashboardData(
     pricingMode: user.pricingMode,
     projectOptions: allProjects.map((p): ProjectOption => ({ id: p.id, name: p.name })),
     clientOptions,
+    sourceOptions: hasImportedSessions
+      ? [
+          { value: "native", label: "DevMeter (AI)" },
+          ...IMPORT_TEMPLATES.map((t) => ({ value: t.id, label: t.label })),
+        ]
+      : [],
     projectSummaries,
     breakEven: computeBreakEven(pricing, allMonthSessions),
     budget: computeBudget(
