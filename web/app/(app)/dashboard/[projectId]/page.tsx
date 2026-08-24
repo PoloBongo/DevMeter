@@ -39,6 +39,28 @@ export default async function ProjectDetailPage({
     q,
   });
 
+  const rangeLabel =
+    normalizedRange === "7"
+      ? "7d"
+      : normalizedRange === "all"
+        ? "all time"
+        : "30d";
+
+  const filteredMinutes = filtered.reduce(
+    (sum, s) => sum + detail.sessionMinutes(s),
+    0
+  );
+  const filteredAiCost = filtered.reduce(
+    (sum, s) => sum + detail.sessionCost(s),
+    0
+  );
+  const filteredAiCostPaygEquivalent = filtered.reduce(
+    (sum, s) => sum + detail.sessionCostPaygEquivalent(s),
+    0
+  );
+  const filteredTotalCost =
+    (filteredMinutes / 60) * detail.hourlyRate + filteredAiCost;
+
   const rows: SessionRowData[] = filtered.map((s) => ({
     id: s.id,
     startedAt: s.startedAt.toISOString(),
@@ -123,29 +145,29 @@ export default async function ProjectDetailPage({
 
       <div className="mb-5.5 grid grid-cols-2 gap-3.5 sm:grid-cols-4">
         <div className="rounded-xl border border-border bg-surface px-4.5 py-4">
-          <div className="mb-1.5 text-xs text-muted">Total time (mo.)</div>
+          <div className="mb-1.5 text-xs text-muted">Total time ({rangeLabel})</div>
           <div className="font-mono text-[21px] font-semibold">
-            {formatDuration(detail.monthMinutes)}
+            {formatDuration(filteredMinutes)}
           </div>
         </div>
         <div className="rounded-xl border border-border bg-surface px-4.5 py-4">
-          <div className="mb-1.5 text-xs text-muted">AI cost (mo.)</div>
+          <div className="mb-1.5 text-xs text-muted">AI cost ({rangeLabel})</div>
           <div className="font-mono text-[21px] font-semibold text-accent">
-            {formatMoney(detail.monthAiCost, detail.currency)}
+            {formatMoney(filteredAiCost, detail.currency)}
           </div>
           {showPaygHint &&
-            Math.round(detail.monthAiCostPaygEquivalent * 100) !==
-              Math.round(detail.monthAiCost * 100) && (
+            Math.round(filteredAiCostPaygEquivalent * 100) !==
+              Math.round(filteredAiCost * 100) && (
               <div className="mt-0.5 text-[11px] text-dim">
-                ≈ {formatMoney(detail.monthAiCostPaygEquivalent, detail.currency)}{" "}
+                ≈ {formatMoney(filteredAiCostPaygEquivalent, detail.currency)}{" "}
                 payg
               </div>
             )}
         </div>
         <div className="rounded-xl border border-border bg-surface px-4.5 py-4">
-          <div className="mb-1.5 text-xs text-muted">Total cost (mo.)</div>
+          <div className="mb-1.5 text-xs text-muted">Total cost ({rangeLabel})</div>
           <div className="font-mono text-[21px] font-semibold">
-            {formatMoney(detail.monthTotalCost, detail.currency)}
+            {formatMoney(filteredTotalCost, detail.currency)}
           </div>
         </div>
         <div className="rounded-xl border border-border bg-surface px-4.5 py-4">

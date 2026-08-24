@@ -20,3 +20,15 @@ export function formatTokens(tokens: number): string {
 export function formatDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
+
+/**
+ * YYYY-MM-DD in the *local* calendar day, for round-tripping with
+ * `<input type="date">` — unlike formatDate, this doesn't shift to a
+ * different day for users east of UTC when the Date holds local midnight.
+ */
+export function formatDateLocal(date: Date): string {
+  const y = date.getFullYear();
+  const m = (date.getMonth() + 1).toString().padStart(2, "0");
+  const d = date.getDate().toString().padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}

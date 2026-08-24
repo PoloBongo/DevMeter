@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
-import { getDashboardData } from "@/lib/queries";
-import { formatDuration } from "@/lib/format";
+import { getDashboardData, type DashboardPeriod } from "@/lib/queries";
+import { formatDuration, formatDateLocal } from "@/lib/format";
 import { formatMoney } from "@/lib/currency";
 import { UsageChart } from "@/components/usage-chart";
 import { AddProjectForm } from "@/components/add-project-form";
@@ -13,17 +13,72 @@ import { ToastFromQuery } from "@/components/toast-from-query";
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ project?: string; client?: string; source?: string }>;
+  searchParams: Promise<{
+    project?: string;
+    client?: string;
+    source?: string;
+    period?: string;
+    from?: string;
+    to?: string;
+  }>;
 }) {
   const session = await auth();
   const userId = session!.user.id;
-  const { project, client, source } = await searchParams;
+  const { project, client, source, period, from, to } = await searchParams;
 
-  const data = await getDashboardData(userId, { projectId: project, client, source });
+  const normalizedPeriod: DashboardPeriod =
+    period === "7" || period === "30" || period === "all" || period === "custom"
+      ? period
+      : "month";
+
+  // A valid YYYY-MM-DD from the date inputs; anything else (missing, malformed,
+  // partially typed) is ignored rather than passed to the query as a bad Date.
+  const parseDateParam = (value: string | undefined): Date | null => {
+    if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+    const date = new Date(`${value}T00:00:00`);
+    return Number.isNaN(date.getTime()) ? null : date;
+  };
+
+  const today = new Date();
+  const defaultFrom = new Date();
+  defaultFrom.setDate(defaultFrom.getDate() - 30);
+
+  const customFrom = parseDateParam(from) ?? defaultFrom;
+  const customTo = parseDateParam(to) ?? today;
+
+  const data = await getDashboardData(userId, {
+    projectId: project,
+    client,
+    source,
+    period: normalizedPeriod,
+    customFrom,
+    customTo,
+  });
   const showPaygHint =
     data.pricingMode !== "PAYG" &&
-    Math.round(data.totalMonthAiCostPaygEquivalent * 100) !==
-      Math.round(data.totalMonthAiCost * 100);
+    Math.round(data.totalPeriodAiCostPaygEquivalent * 100) !==
+      Math.round(data.totalPeriodAiCost * 100);
+
+  const periodLabel =
+    normalizedPeriod === "7"
+      ? "last 7 days"
+      : normalizedPeriod === "30"
+        ? "last 30 days"
+        : normalizedPeriod === "all"
+          ? "all time"
+          : normalizedPeriod === "custom"
+            ? `${formatDateLocal(customFrom)} → ${formatDateLocal(customTo)}`
+            : "this month";
+  const periodLabelShort =
+    normalizedPeriod === "7"
+      ? "7d"
+      : normalizedPeriod === "30"
+        ? "30d"
+        : normalizedPeriod === "all"
+          ? "all time"
+          : normalizedPeriod === "custom"
+            ? "custom"
+            : "mo.";
 
   return (
     <div className="mx-auto w-full max-w-5xl px-7 py-8">
@@ -48,30 +103,30 @@ export default async function DashboardPage({
       <div className="mb-5 grid grid-cols-1 gap-3.5 sm:grid-cols-3">
         <div className="rounded-xl border border-border bg-surface px-5 py-4.5">
           <div className="mb-2 text-xs text-muted">
-            Total time — this month
+            Total time — {periodLabel}
           </div>
           <div className="font-mono text-2xl font-semibold">
-            {formatDuration(data.totalMonthMinutes)}
+            {formatDuration(data.totalPeriodMinutes)}
           </div>
         </div>
         <div className="rounded-xl border border-border bg-surface px-5 py-4.5">
-          <div className="mb-2 text-xs text-muted">AI cost — this month</div>
+          <div className="mb-2 text-xs text-muted">AI cost — {periodLabel}</div>
           <div className="font-mono text-2xl font-semibold text-accent">
-            {formatMoney(data.totalMonthAiCost, data.currency)}
+            {formatMoney(data.totalPeriodAiCost, data.currency)}
           </div>
           {showPaygHint && (
             <div className="mt-1 text-[11px] text-dim">
-              ≈ {formatMoney(data.totalMonthAiCostPaygEquivalent, data.currency)}{" "}
+              ≈ {formatMoney(data.totalPeriodAiCostPaygEquivalent, data.currency)}{" "}
               pay-as-you-go
             </div>
           )}
         </div>
         <div className="rounded-xl border border-border bg-surface px-5 py-4.5">
           <div className="mb-2 text-xs text-muted">
-            Total estimated cost
+            Total estimated cost — {periodLabel}
           </div>
           <div className="font-mono text-2xl font-semibold">
-            {formatMoney(data.totalMonthCost, data.currency)}
+            {formatMoney(data.totalPeriodCost, data.currency)}
           </div>
         </div>
       </div>
@@ -85,6 +140,8 @@ export default async function DashboardPage({
           projects={data.projectOptions}
           clients={data.clientOptions}
           sources={data.sourceOptions}
+          defaultFrom={formatDateLocal(customFrom)}
+          defaultTo={formatDateLocal(customTo)}
         />
       </div>
 
@@ -92,8 +149,8 @@ export default async function DashboardPage({
         <div className="grid grid-cols-[2.2fr_1.3fr_1fr_1fr_1fr] px-5.5 py-3 text-[11.5px] uppercase tracking-wide text-muted border-b border-border">
           <span>Project</span>
           <span>Client</span>
-          <span>Time (mo.)</span>
-          <span>AI cost (mo.)</span>
+          <span>Time ({periodLabelShort})</span>
+          <span>AI cost ({periodLabelShort})</span>
           <span>Total cost</span>
         </div>
 
@@ -106,8 +163,8 @@ export default async function DashboardPage({
         {data.projectSummaries.map((project) => {
           const projectShowsPaygHint =
             data.pricingMode !== "PAYG" &&
-            Math.round(project.monthAiCostPaygEquivalent * 100) !==
-              Math.round(project.monthAiCost * 100);
+            Math.round(project.periodAiCostPaygEquivalent * 100) !==
+              Math.round(project.periodAiCost * 100);
 
           return (
             <Link
@@ -129,15 +186,15 @@ export default async function DashboardPage({
                 {project.clientName ?? "—"}
               </span>
               <span className="font-mono text-[13px]">
-                {formatDuration(project.monthMinutes)}
+                {formatDuration(project.periodMinutes)}
               </span>
               <div className="font-mono text-[13px] text-accent">
-                {formatMoney(project.monthAiCost, data.currency)}
+                {formatMoney(project.periodAiCost, data.currency)}
                 {projectShowsPaygHint && (
                   <div className="text-[10.5px] text-dim">
                     ≈{" "}
                     {formatMoney(
-                      project.monthAiCostPaygEquivalent,
+                      project.periodAiCostPaygEquivalent,
                       data.currency
                     )}{" "}
                     payg
@@ -145,7 +202,7 @@ export default async function DashboardPage({
                 )}
               </div>
               <span className="font-mono text-[13px] font-semibold">
-                {formatMoney(project.monthTotalCost, data.currency)}
+                {formatMoney(project.periodTotalCost, data.currency)}
               </span>
             </Link>
           );

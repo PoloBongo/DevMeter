@@ -4,16 +4,18 @@ import type { PricingMode, Session } from "@/generated/prisma/client";
 import { convertFromUsd, getUsdToEurRate, type Currency } from "@/lib/currency";
 import { IMPORT_TEMPLATES } from "@/lib/imports";
 
+export type DashboardPeriod = "month" | "7" | "30" | "all" | "custom";
+
 export type ProjectSummary = {
   id: string;
   name: string;
   clientName: string | null;
   lastActivity: Date | null;
-  monthMinutes: number;
-  monthAiCost: number;
-  /** Raw token-based estimate, ignoring pricing mode — shown as an FYI next to monthAiCost when they differ. */
-  monthAiCostPaygEquivalent: number;
-  monthTotalCost: number;
+  periodMinutes: number;
+  periodAiCost: number;
+  /** Raw token-based estimate, ignoring pricing mode — shown as an FYI next to periodAiCost when they differ. */
+  periodAiCostPaygEquivalent: number;
+  periodTotalCost: number;
 };
 
 export type ProjectOption = { id: string; name: string };
@@ -132,6 +134,33 @@ function startOfMonth(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 }
 
+/**
+ * Bounds for the dashboard's display period. `start`/`end` are inclusive;
+ * null means unbounded on that side. For "custom", `customFrom`/`customTo`
+ * are taken as-is (a missing bound is left unbounded) — callers are
+ * responsible for validating/parsing them first.
+ */
+function resolvePeriodRange(
+  period: DashboardPeriod,
+  customFrom?: Date | null,
+  customTo?: Date | null
+): { start: Date | null; end: Date | null } {
+  if (period === "custom") {
+    // customTo is a calendar day picked by the user — extend it to the end
+    // of that day so sessions on that day are included.
+    const end = customTo ? new Date(customTo) : null;
+    if (end) end.setHours(23, 59, 59, 999);
+    return { start: customFrom ?? null, end };
+  }
+  if (period === "all") return { start: null, end: null };
+  if (period === "7" || period === "30") {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - Number(period));
+    return { start: cutoff, end: null };
+  }
+  return { start: startOfMonth(new Date()), end: null };
+}
+
 export function sessionMinutes(
   session: Pick<Session, "startedAt" | "endedAt">
 ): number {
@@ -176,7 +205,15 @@ function buildDailySeries(
 
 export async function getDashboardData(
   userId: string,
-  filter?: { projectId?: string; client?: string; source?: string }
+  filter?: {
+    projectId?: string;
+    client?: string;
+    source?: string;
+    period?: DashboardPeriod;
+    /** Only used when period is "custom". */
+    customFrom?: Date | null;
+    customTo?: Date | null;
+  }
 ) {
   const [user, usdToEurRate] = await Promise.all([
     requireUser(userId),
@@ -219,6 +256,17 @@ export async function getDashboardData(
   const monthStart = startOfMonth(new Date());
   const hourlyRate = Number(user.hourlyRate);
 
+  // The dashboard's display period (defaults to the calendar month, same as
+  // before) — only affects what's *shown* in the summary cards/table below.
+  // Pricing denominator, budget, and break-even stay tied to the real
+  // calendar month regardless, since a subscription bills monthly.
+  const period = filter?.period ?? "month";
+  const { start: periodStart, end: periodEnd } = resolvePeriodRange(
+    period,
+    filter?.customFrom,
+    filter?.customTo
+  );
+
   // Pricing denominator (amortization share, break-even) is always
   // account-wide — a subscription isn't scoped to one project.
   const allMonthSessions = allProjects
@@ -244,19 +292,21 @@ export async function getDashboardData(
   }
 
   const projectSummaries: ProjectSummary[] = projects.map((project) => {
-    const monthSessions = project.sessions.filter(
-      (s) => s.startedAt >= monthStart
+    const periodSessions = project.sessions.filter(
+      (s) =>
+        (!periodStart || s.startedAt >= periodStart) &&
+        (!periodEnd || s.startedAt <= periodEnd)
     );
-    const monthMinutes = monthSessions.reduce(
+    const periodMinutes = periodSessions.reduce(
       (sum, s) => sum + sessionMinutes(s),
       0
     );
-    const monthAiCost = monthSessions.reduce(
+    const periodAiCost = periodSessions.reduce(
       (sum, s) => sum + effectiveSessionCost(s, pricing),
       0
     );
-    const monthAiCostPaygEquivalent = convertFromUsd(
-      monthSessions.reduce((sum, s) => sum + paygEquivalentUsd(s), 0),
+    const periodAiCostPaygEquivalent = convertFromUsd(
+      periodSessions.reduce((sum, s) => sum + paygEquivalentUsd(s), 0),
       pricing.currency,
       pricing.usdToEurRate
     );
@@ -266,10 +316,10 @@ export async function getDashboardData(
       name: project.name,
       clientName: project.clientName,
       lastActivity: project.sessions[0]?.startedAt ?? null,
-      monthMinutes,
-      monthAiCost,
-      monthAiCostPaygEquivalent,
-      monthTotalCost: (monthMinutes / 60) * hourlyRate + monthAiCost,
+      periodMinutes,
+      periodAiCost,
+      periodAiCostPaygEquivalent,
+      periodTotalCost: (periodMinutes / 60) * hourlyRate + periodAiCost,
     };
   });
 
@@ -288,26 +338,27 @@ export async function getDashboardData(
         ]
       : [],
     projectSummaries,
+    period,
     breakEven: computeBreakEven(pricing, allMonthSessions),
     budget: computeBudget(
       pricing,
       user.budgetAmount ? Number(user.budgetAmount) : null,
       allMonthSessions
     ),
-    totalMonthMinutes: projectSummaries.reduce(
-      (sum, p) => sum + p.monthMinutes,
+    totalPeriodMinutes: projectSummaries.reduce(
+      (sum, p) => sum + p.periodMinutes,
       0
     ),
-    totalMonthAiCost: projectSummaries.reduce(
-      (sum, p) => sum + p.monthAiCost,
+    totalPeriodAiCost: projectSummaries.reduce(
+      (sum, p) => sum + p.periodAiCost,
       0
     ),
-    totalMonthAiCostPaygEquivalent: projectSummaries.reduce(
-      (sum, p) => sum + p.monthAiCostPaygEquivalent,
+    totalPeriodAiCostPaygEquivalent: projectSummaries.reduce(
+      (sum, p) => sum + p.periodAiCostPaygEquivalent,
       0
     ),
-    totalMonthCost: projectSummaries.reduce(
-      (sum, p) => sum + p.monthTotalCost,
+    totalPeriodCost: projectSummaries.reduce(
+      (sum, p) => sum + p.periodTotalCost,
       0
     ),
     series: buildDailySeries(filteredSessions, 30, pricing),
@@ -522,9 +573,9 @@ export async function getOrgMemberStats(
         email: member.email,
         joinedAt: member.createdAt,
         currency: data.currency,
-        monthMinutes: data.totalMonthMinutes,
-        monthAiCost: data.totalMonthAiCost,
-        monthTotalCost: data.totalMonthCost,
+        monthMinutes: data.totalPeriodMinutes,
+        monthAiCost: data.totalPeriodAiCost,
+        monthTotalCost: data.totalPeriodCost,
       };
     })
   );
