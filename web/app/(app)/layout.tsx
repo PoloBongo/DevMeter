@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { NavLinks } from "@/components/nav-links";
 import { ToastProvider } from "@/components/toast-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SubmitButton } from "@/components/submit-button";
 import { getTheme } from "@/lib/theme";
 
 export default async function AppLayout({
@@ -51,12 +52,12 @@ export default async function AppLayout({
               {initials}
             </div>
             <form action={signOutAction}>
-              <button
-                type="submit"
+              <SubmitButton
+                pendingLabel="Signing out…"
                 className="cursor-pointer text-[13px] text-muted hover:text-foreground"
               >
                 Sign out
-              </button>
+              </SubmitButton>
             </form>
           </div>
         </div>

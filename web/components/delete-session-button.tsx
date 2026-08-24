@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { deleteSessionAction } from "@/app/(app)/dashboard/actions";
 import { useToast } from "@/components/toast-provider";
+import { SubmitButton } from "@/components/submit-button";
 
 export function DeleteSessionButton({
   sessionId,
@@ -37,12 +38,12 @@ export function DeleteSessionButton({
     >
       <input type="hidden" name="sessionId" value={sessionId} />
       <input type="hidden" name="projectId" value={projectId} />
-      <button
-        type="submit"
+      <SubmitButton
+        pendingLabel="Deleting…"
         className="cursor-pointer rounded-md bg-red-500 px-2 py-0.5 text-[11px] font-semibold text-white"
       >
         Confirm
-      </button>
+      </SubmitButton>
       <button
         type="button"
         onClick={() => setConfirming(false)}

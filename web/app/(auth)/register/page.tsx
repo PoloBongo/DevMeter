@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { registerAction } from "@/app/(auth)/actions";
+import { SubmitButton } from "@/components/submit-button";
 
 const ERROR_MESSAGES: Record<string, string> = {
   invalid: "Enter a valid email and a password of at least 8 characters.",
@@ -52,12 +53,12 @@ export default async function RegisterPage({
           />
           <span className="text-[11px] text-dim">At least 8 characters.</span>
         </label>
-        <button
-          type="submit"
+        <SubmitButton
+          pendingLabel="Creating account…"
           className="mt-1 cursor-pointer rounded-lg bg-accent px-4 py-2.5 text-[13.5px] font-semibold text-background"
         >
           Create account
-        </button>
+        </SubmitButton>
       </form>
 
       <p className="mt-5 text-center text-[13px] text-muted">

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { updateBudgetAction } from "@/app/(app)/settings/actions";
 import { currencySymbol, type Currency } from "@/lib/currency";
 import { useToast } from "@/components/toast-provider";
+import { SubmitButton } from "@/components/submit-button";
 
 export function BudgetForm({
   budgetAmount,
@@ -58,12 +59,12 @@ export function BudgetForm({
         </div>
       )}
 
-      <button
-        type="submit"
+      <SubmitButton
+        pendingLabel="Saving…"
         className="cursor-pointer self-start rounded-lg bg-accent px-3.5 py-2.5 text-[13px] font-semibold text-background"
       >
         Save
-      </button>
+      </SubmitButton>
     </form>
   );
 }

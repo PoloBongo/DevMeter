@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { updateProjectClientAction } from "@/app/(app)/dashboard/actions";
 import { useToast } from "@/components/toast-provider";
+import { SubmitButton } from "@/components/submit-button";
 
 export function ProjectClientForm({
   projectId,
@@ -42,12 +43,12 @@ export function ProjectClientForm({
         autoFocus
         className="rounded-lg border border-border bg-surface-2 px-2.5 py-1.5 text-[13px] text-foreground outline-none focus:border-accent/50"
       />
-      <button
-        type="submit"
+      <SubmitButton
+        pendingLabel="Saving…"
         className="cursor-pointer rounded-lg bg-accent px-2.5 py-1.5 text-[12.5px] font-semibold text-background"
       >
         Save
-      </button>
+      </SubmitButton>
       <button
         type="button"
         onClick={() => setEditing(false)}

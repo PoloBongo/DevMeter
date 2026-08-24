@@ -4,6 +4,7 @@ import { useState } from "react";
 import { updateHourlyRateAction } from "@/app/(app)/settings/actions";
 import { currencySymbol, type Currency } from "@/lib/currency";
 import { useToast } from "@/components/toast-provider";
+import { SubmitButton } from "@/components/submit-button";
 
 export function HourlyRateForm({
   rateMode,
@@ -74,12 +75,12 @@ export function HourlyRateForm({
             />
             <span className="pr-3 text-[12.5px] text-dim">/ hour</span>
           </div>
-          <button
-            type="submit"
+          <SubmitButton
+            pendingLabel="Saving…"
             className="cursor-pointer rounded-lg bg-accent px-3.5 py-2.5 text-[13px] font-semibold text-background"
           >
             Save
-          </button>
+          </SubmitButton>
         </div>
       ) : (
         <div className="flex flex-wrap items-center gap-2.5">
@@ -110,12 +111,12 @@ export function HourlyRateForm({
             />
             <span className="pr-3 text-[12.5px] text-dim">h / day</span>
           </div>
-          <button
-            type="submit"
+          <SubmitButton
+            pendingLabel="Saving…"
             className="cursor-pointer rounded-lg bg-accent px-3.5 py-2.5 text-[13px] font-semibold text-background"
           >
             Save
-          </button>
+          </SubmitButton>
         </div>
       )}
     </form>

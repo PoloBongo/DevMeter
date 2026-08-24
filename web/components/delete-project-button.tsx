@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { deleteProjectAction } from "@/app/(app)/dashboard/actions";
+import { SubmitButton } from "@/components/submit-button";
 
 export function DeleteProjectButton({ projectId }: { projectId: string }) {
   const [confirming, setConfirming] = useState(false);
@@ -27,12 +28,12 @@ export function DeleteProjectButton({ projectId }: { projectId: string }) {
       <span className="text-[12.5px] text-red-400">
         Delete this project and all its sessions?
       </span>
-      <button
-        type="submit"
+      <SubmitButton
+        pendingLabel="Deleting…"
         className="cursor-pointer rounded-md bg-red-500 px-2.5 py-1 text-[12px] font-semibold text-white"
       >
         Confirm
-      </button>
+      </SubmitButton>
       <button
         type="button"
         onClick={() => setConfirming(false)}

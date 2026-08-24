@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { enableEnterpriseModeAction } from "@/app/(app)/settings/actions";
 import { useToast } from "@/components/toast-provider";
+import { SubmitButton } from "@/components/submit-button";
 
 export function EnterpriseSection({
   domain,
@@ -51,12 +52,12 @@ export function EnterpriseSection({
         toast("Enterprise mode enabled");
       }}
     >
-      <button
-        type="submit"
+      <SubmitButton
+        pendingLabel="Enabling…"
         className="cursor-pointer rounded-lg bg-accent px-3.5 py-2.5 text-[13px] font-semibold text-background"
       >
         Enable enterprise mode for @{domain}
-      </button>
+      </SubmitButton>
     </form>
   );
 }

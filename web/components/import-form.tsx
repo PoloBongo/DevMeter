@@ -9,6 +9,7 @@ import {
   type ImportResult,
 } from "@/app/(app)/import/actions";
 import { useToast } from "@/components/toast-provider";
+import { useTopLoaderPending } from "@/lib/use-top-loader-pending";
 
 type ExistingProject = { id: string; name: string };
 
@@ -36,6 +37,7 @@ export function ImportForm({
   const [confirmingUndo, setConfirmingUndo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const toast = useToast();
+  useTopLoaderPending(pending);
 
   function handleUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

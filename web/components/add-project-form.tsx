@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { createProjectAction } from "@/app/(app)/dashboard/actions";
 import { useToast } from "@/components/toast-provider";
+import { SubmitButton } from "@/components/submit-button";
 
 export function AddProjectForm() {
   const [open, setOpen] = useState(false);
@@ -43,12 +44,12 @@ export function AddProjectForm() {
         placeholder="Client (optional)"
         className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-[13px] text-foreground outline-none focus:border-accent/50"
       />
-      <button
-        type="submit"
+      <SubmitButton
+        pendingLabel="Creating…"
         className="cursor-pointer rounded-lg bg-accent px-3.5 py-2 text-[13px] font-semibold text-background"
       >
         Create
-      </button>
+      </SubmitButton>
       <button
         type="button"
         onClick={() => setOpen(false)}

@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { regenerateApiKeyAction } from "@/app/(app)/settings/actions";
 import { useToast } from "@/components/toast-provider";
+import { useTopLoaderPending } from "@/lib/use-top-loader-pending";
 
 export function ApiKeySection({
   hasKey,
@@ -15,6 +16,7 @@ export function ApiKeySection({
   const [copyLabel, setCopyLabel] = useState("Copy");
   const [pending, startTransition] = useTransition();
   const toast = useToast();
+  useTopLoaderPending(pending);
 
   function handleRegenerate() {
     startTransition(async () => {

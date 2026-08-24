@@ -4,6 +4,7 @@ import { useState } from "react";
 import { updateCurrencyAction } from "@/app/(app)/settings/actions";
 import type { Currency } from "@/lib/currency";
 import { useToast } from "@/components/toast-provider";
+import { SubmitButton } from "@/components/submit-button";
 
 const OPTIONS: { value: Currency; label: string }[] = [
   { value: "EUR", label: "€ Euro" },
@@ -39,12 +40,12 @@ export function CurrencyForm({ currency }: { currency: Currency }) {
         ))}
       </div>
       <input type="hidden" name="currency" value={value} />
-      <button
-        type="submit"
+      <SubmitButton
+        pendingLabel="Saving…"
         className="cursor-pointer rounded-lg border border-border px-3.5 py-1.5 text-[12.5px] text-foreground"
       >
         Save
-      </button>
+      </SubmitButton>
     </form>
   );
 }
