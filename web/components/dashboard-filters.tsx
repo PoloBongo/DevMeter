@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { ProjectOption } from "@/lib/queries";
+import { DateRangePicker } from "@/components/date-range-picker";
 
 export function DashboardFilters({
   projects,
@@ -69,23 +70,11 @@ export function DashboardFilters({
         <option value="custom">Custom range</option>
       </select>
       {selectedPeriod === "custom" && (
-        <>
-          <input
-            type="date"
-            value={selectedFrom}
-            max={selectedTo}
-            onChange={(e) => updateParam("from", e.target.value)}
-            className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-[13px] text-foreground outline-none"
-          />
-          <span className="text-[13px] text-muted">→</span>
-          <input
-            type="date"
-            value={selectedTo}
-            min={selectedFrom}
-            onChange={(e) => updateParam("to", e.target.value)}
-            className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-[13px] text-foreground outline-none"
-          />
-        </>
+        <DateRangePicker
+          from={selectedFrom}
+          to={selectedTo}
+          onChange={(from, to) => updateParams({ from, to })}
+        />
       )}
       <select
         value={selectedProject}
