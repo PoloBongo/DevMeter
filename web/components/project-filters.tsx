@@ -1,6 +1,10 @@
 "use client";
 
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useSearchParams, usePathname } from "next/navigation";
+// See dashboard-filters.tsx: this wrapped useRouter also starts the shared
+// top-loading bar on programmatic push/replace, which plain next/navigation
+// doesn't do for anything but literal <a>/<Link> clicks.
+import { useRouter } from "nextjs-toploader/app";
 
 export function ProjectFilters() {
   const router = useRouter();

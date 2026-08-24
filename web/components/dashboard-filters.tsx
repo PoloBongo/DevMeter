@@ -1,6 +1,11 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+// This wraps next/navigation's useRouter to also start the shared top-
+// loading bar on push/replace — plain next/navigation only gets it for
+// literal <a>/<Link> clicks, not the programmatic navigations these filter
+// dropdowns do.
+import { useRouter } from "nextjs-toploader/app";
 import type { ProjectOption } from "@/lib/queries";
 import { DateRangePicker } from "@/components/date-range-picker";
 
