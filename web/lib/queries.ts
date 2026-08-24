@@ -171,8 +171,21 @@ export function sessionMinutes(
   );
 }
 
+/** The subset of Session fields needed for duration/cost math — lets callers
+ *  pass a narrow Prisma `select` result instead of a full row. */
+type SessionCostFields = Pick<
+  Session,
+  | "startedAt"
+  | "endedAt"
+  | "tokensInput"
+  | "tokensOutput"
+  | "tokensCacheRead"
+  | "tokensCacheCreation"
+  | "estimatedCostUsd"
+>;
+
 function buildDailySeries(
-  sessions: Session[],
+  sessions: SessionCostFields[],
   days: number,
   pricing: Pricing
 ): DailyPoint[] {
@@ -215,63 +228,92 @@ export async function getDashboardData(
     customTo?: Date | null;
   }
 ) {
-  const [user, usdToEurRate] = await Promise.all([
-    requireUser(userId),
-    getUsdToEurRate(),
-  ]);
-  let allProjects = await prisma.project.findMany({
-    where: { userId },
-    orderBy: { createdAt: "desc" },
-    include: { sessions: { orderBy: { startedAt: "desc" } } },
-  });
+  const user = await requireUser(userId);
+  // Only users displaying in EUR ever need the USD->EUR rate, so skip the FX
+  // network call entirely for USD accounts, and let it run *alongside* the
+  // session queries below rather than blocking them.
+  const usdToEurRatePromise: Promise<number> =
+    user.currency === "EUR" ? getUsdToEurRate() : Promise.resolve(1);
 
-  const hasImportedSessions = allProjects.some((p) =>
-    p.sessions.some((s) => s.source !== null)
-  );
-
-  // "native" means the collector's own untagged sessions (source is null);
-  // anything else matches an import template id (e.g. "clockify"). Applied
-  // to the sessions themselves, not the project list, so a project mixing
-  // native + imported time is still shown with just the matching sessions.
-  if (filter?.source) {
-    const wanted = filter.source;
-    allProjects = allProjects.map((project) => ({
-      ...project,
-      sessions: project.sessions.filter((s) =>
-        wanted === "native" ? s.source === null : s.source === wanted
-      ),
-    }));
-  }
-
-  // Always built from the full, unfiltered project list so the dropdown
-  // keeps every option regardless of what's currently selected.
-  const clientOptions = Array.from(
-    new Set(
-      allProjects
-        .map((p) => p.clientName)
-        .filter((name): name is string => Boolean(name))
-    )
-  ).sort((a, b) => a.localeCompare(b));
-
-  const monthStart = startOfMonth(new Date());
   const hourlyRate = Number(user.hourlyRate);
-
-  // The dashboard's display period (defaults to the calendar month, same as
-  // before) — only affects what's *shown* in the summary cards/table below.
-  // Pricing denominator, budget, and break-even stay tied to the real
-  // calendar month regardless, since a subscription bills monthly.
+  const monthStart = startOfMonth(new Date());
   const period = filter?.period ?? "month";
   const { start: periodStart, end: periodEnd } = resolvePeriodRange(
     period,
     filter?.customFrom,
     filter?.customTo
   );
+  const chartCutoff = new Date();
+  chartCutoff.setDate(chartCutoff.getDate() - 30);
+  chartCutoff.setHours(0, 0, 0, 0);
 
-  // Pricing denominator (amortization share, break-even) is always
-  // account-wide — a subscription isn't scoped to one project.
-  const allMonthSessions = allProjects
-    .flatMap((p) => p.sessions)
-    .filter((s) => s.startedAt >= monthStart);
+  // "native" means the collector's own untagged sessions (source is null);
+  // anything else matches an import template id (e.g. "clockify").
+  const sourceWhere = filter?.source
+    ? filter.source === "native"
+      ? { source: null }
+      : { source: filter.source }
+    : {};
+
+  const sessionSelect = {
+    projectId: true,
+    startedAt: true,
+    endedAt: true,
+    tokensInput: true,
+    tokensOutput: true,
+    tokensCacheRead: true,
+    tokensCacheCreation: true,
+    estimatedCostUsd: true,
+  } as const;
+
+  // Only project metadata up front — full history is fetched separately,
+  // scoped to whatever date window each figure actually needs, instead of
+  // pulling every session the account has ever logged on every load.
+  const [allProjectsMeta, hasImportedSessionRow, allMonthSessions] =
+    await Promise.all([
+      prisma.project.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, name: true, clientName: true },
+      }),
+      prisma.session.findFirst({
+        where: { source: { not: null }, project: { userId } },
+        select: { id: true },
+      }),
+      // Pricing denominator (amortization share) + budget/break-even are
+      // always account-wide and tied to the real calendar month, regardless
+      // of the dashboard's project/client/period filter — a subscription
+      // isn't scoped to one project and bills on a real monthly cycle. They
+      // do respect the source filter, matching the previous behavior.
+      prisma.session.findMany({
+        where: {
+          project: { userId },
+          startedAt: { gte: monthStart },
+          ...sourceWhere,
+        },
+        select: sessionSelect,
+      }),
+    ]);
+
+  const hasImportedSessions = hasImportedSessionRow !== null;
+
+  const clientOptions = Array.from(
+    new Set(
+      allProjectsMeta
+        .map((p) => p.clientName)
+        .filter((name): name is string => Boolean(name))
+    )
+  ).sort((a, b) => a.localeCompare(b));
+
+  let projectsMeta = filter?.projectId
+    ? allProjectsMeta.filter((p) => p.id === filter.projectId)
+    : allProjectsMeta;
+  if (filter?.client) {
+    projectsMeta = projectsMeta.filter((p) => p.clientName === filter.client);
+  }
+  const projectIds = projectsMeta.map((p) => p.id);
+
+  const usdToEurRate = await usdToEurRatePromise;
   const totalMonthTokens = allMonthSessions.reduce(
     (sum, s) => sum + sessionTokens(s),
     0
@@ -284,29 +326,61 @@ export async function getDashboardData(
     usdToEurRate,
   };
 
-  let projects = filter?.projectId
-    ? allProjects.filter((p) => p.id === filter.projectId)
-    : allProjects;
-  if (filter?.client) {
-    projects = projects.filter((p) => p.clientName === filter.client);
+  // `projectId: { in: [] }` correctly matches nothing, so no need to special
+  // -case an empty project list here.
+  const [periodSessions, chartSessions, lastActivityRows] = await Promise.all(
+    [
+      prisma.session.findMany({
+        where: {
+          projectId: { in: projectIds },
+          ...sourceWhere,
+          ...((periodStart || periodEnd) && {
+            startedAt: {
+              ...(periodStart ? { gte: periodStart } : {}),
+              ...(periodEnd ? { lte: periodEnd } : {}),
+            },
+          }),
+        },
+        select: sessionSelect,
+      }),
+      prisma.session.findMany({
+        where: {
+          projectId: { in: projectIds },
+          ...sourceWhere,
+          startedAt: { gte: chartCutoff },
+        },
+        select: sessionSelect,
+      }),
+      prisma.session.groupBy({
+        by: ["projectId"],
+        where: { projectId: { in: projectIds }, ...sourceWhere },
+        _max: { startedAt: true },
+      }),
+    ]
+  );
+
+  const lastActivityByProject = new Map(
+    lastActivityRows.map((r) => [r.projectId, r._max.startedAt])
+  );
+  const periodSessionsByProject = new Map<string, typeof periodSessions>();
+  for (const s of periodSessions) {
+    const list = periodSessionsByProject.get(s.projectId);
+    if (list) list.push(s);
+    else periodSessionsByProject.set(s.projectId, [s]);
   }
 
-  const projectSummaries: ProjectSummary[] = projects.map((project) => {
-    const periodSessions = project.sessions.filter(
-      (s) =>
-        (!periodStart || s.startedAt >= periodStart) &&
-        (!periodEnd || s.startedAt <= periodEnd)
-    );
-    const periodMinutes = periodSessions.reduce(
+  const projectSummaries: ProjectSummary[] = projectsMeta.map((project) => {
+    const sessions = periodSessionsByProject.get(project.id) ?? [];
+    const periodMinutes = sessions.reduce(
       (sum, s) => sum + sessionMinutes(s),
       0
     );
-    const periodAiCost = periodSessions.reduce(
+    const periodAiCost = sessions.reduce(
       (sum, s) => sum + effectiveSessionCost(s, pricing),
       0
     );
     const periodAiCostPaygEquivalent = convertFromUsd(
-      periodSessions.reduce((sum, s) => sum + paygEquivalentUsd(s), 0),
+      sessions.reduce((sum, s) => sum + paygEquivalentUsd(s), 0),
       pricing.currency,
       pricing.usdToEurRate
     );
@@ -315,7 +389,7 @@ export async function getDashboardData(
       id: project.id,
       name: project.name,
       clientName: project.clientName,
-      lastActivity: project.sessions[0]?.startedAt ?? null,
+      lastActivity: lastActivityByProject.get(project.id) ?? null,
       periodMinutes,
       periodAiCost,
       periodAiCostPaygEquivalent,
@@ -323,13 +397,11 @@ export async function getDashboardData(
     };
   });
 
-  const filteredSessions = projects.flatMap((p) => p.sessions);
-
   return {
     currency: user.currency,
     hourlyRate,
     pricingMode: user.pricingMode,
-    projectOptions: allProjects.map((p): ProjectOption => ({ id: p.id, name: p.name })),
+    projectOptions: allProjectsMeta.map((p): ProjectOption => ({ id: p.id, name: p.name })),
     clientOptions,
     sourceOptions: hasImportedSessions
       ? [
@@ -361,7 +433,7 @@ export async function getDashboardData(
       (sum, p) => sum + p.periodTotalCost,
       0
     ),
-    series: buildDailySeries(filteredSessions, 30, pricing),
+    series: buildDailySeries(chartSessions, 30, pricing),
   };
 }
 
@@ -370,28 +442,29 @@ export type SessionFilter = {
   q?: string;
 };
 
-export function filterSessions(
-  sessions: Session[],
-  filter: SessionFilter
-): Session[] {
-  let result = sessions;
+/** Prisma `where` fragment for a project's session list — pushes the range
+ *  cutoff and ticket/branch search down to Postgres instead of fetching
+ *  every session ever logged and filtering in JS. */
+function sessionDbFilter(filter?: SessionFilter) {
+  const where: {
+    startedAt?: { gte: Date };
+    OR?: { ticketRef?: object; gitBranch?: object }[];
+  } = {};
 
-  if (filter.range === "7" || filter.range === "30") {
+  if (filter?.range === "7" || filter?.range === "30") {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - Number(filter.range));
-    result = result.filter((s) => s.startedAt >= cutoff);
+    where.startedAt = { gte: cutoff };
   }
 
-  if (filter.q) {
-    const needle = filter.q.toLowerCase();
-    result = result.filter(
-      (s) =>
-        (s.ticketRef?.toLowerCase().includes(needle) ?? false) ||
-        (s.gitBranch?.toLowerCase().includes(needle) ?? false)
-    );
+  if (filter?.q) {
+    where.OR = [
+      { ticketRef: { contains: filter.q, mode: "insensitive" } },
+      { gitBranch: { contains: filter.q, mode: "insensitive" } },
+    ];
   }
 
-  return result;
+  return where;
 }
 
 export type ModelCostBucket = {
@@ -469,30 +542,54 @@ export function groupSessionsByDay(rows: SessionRowData[]): SessionDayGroup[] {
   return order.map((dateKey) => ({ dateKey, sessions: byDay.get(dateKey)! }));
 }
 
-export async function getProjectDetail(userId: string, projectId: string) {
-  const project = await prisma.project.findFirst({
-    where: { id: projectId, userId },
-    include: { sessions: { orderBy: { startedAt: "desc" } } },
-  });
+/**
+ * `filter` narrows the fetched sessions at the DB level (range cutoff +
+ * ticket/branch search) instead of pulling the project's entire session
+ * history on every load — pass the same range/q the page is about to
+ * display with.
+ */
+export async function getProjectDetail(
+  userId: string,
+  projectId: string,
+  filter?: SessionFilter
+) {
+  const user = await requireUser(userId);
+  // Only users displaying in EUR ever need the USD->EUR rate — skip the FX
+  // network call for USD accounts, and run it alongside the DB queries
+  // rather than blocking on it first.
+  const usdToEurRatePromise: Promise<number> =
+    user.currency === "EUR" ? getUsdToEurRate() : Promise.resolve(1);
 
-  if (!project) return null;
-
-  const [user, usdToEurRate] = await Promise.all([
-    requireUser(userId),
-    getUsdToEurRate(),
-  ]);
   const hourlyRate = Number(user.hourlyRate);
   const monthStart = startOfMonth(new Date());
 
-  const monthTokensAgg = await prisma.session.aggregate({
-    where: { project: { userId }, startedAt: { gte: monthStart } },
-    _sum: {
-      tokensInput: true,
-      tokensOutput: true,
-      tokensCacheRead: true,
-      tokensCacheCreation: true,
-    },
-  });
+  const [project, monthTokensAgg, usdToEurRate] = await Promise.all([
+    prisma.project.findFirst({
+      where: { id: projectId, userId },
+      include: {
+        sessions: {
+          orderBy: { startedAt: "desc" },
+          where: sessionDbFilter(filter),
+        },
+      },
+    }),
+    // Pricing denominator: always account-wide (every project of this
+    // user), tied to the real calendar month — a subscription bills
+    // monthly regardless of which project or range is being viewed.
+    prisma.session.aggregate({
+      where: { project: { userId }, startedAt: { gte: monthStart } },
+      _sum: {
+        tokensInput: true,
+        tokensOutput: true,
+        tokensCacheRead: true,
+        tokensCacheCreation: true,
+      },
+    }),
+    usdToEurRatePromise,
+  ]);
+
+  if (!project) return null;
+
   const totalMonthTokens =
     (monthTokensAgg._sum.tokensInput ?? 0) +
     (monthTokensAgg._sum.tokensOutput ?? 0) +
@@ -507,32 +604,11 @@ export async function getProjectDetail(userId: string, projectId: string) {
     usdToEurRate,
   };
 
-  const monthSessions = project.sessions.filter(
-    (s) => s.startedAt >= monthStart
-  );
-  const monthMinutes = monthSessions.reduce(
-    (sum, s) => sum + sessionMinutes(s),
-    0
-  );
-  const monthAiCost = monthSessions.reduce(
-    (sum, s) => sum + effectiveSessionCost(s, pricing),
-    0
-  );
-  const monthAiCostPaygEquivalent = convertFromUsd(
-    monthSessions.reduce((sum, s) => sum + paygEquivalentUsd(s), 0),
-    pricing.currency,
-    pricing.usdToEurRate
-  );
-
   return {
     project,
     currency: user.currency,
     hourlyRate,
     pricingMode: user.pricingMode,
-    monthMinutes,
-    monthAiCost,
-    monthAiCostPaygEquivalent,
-    monthTotalCost: (monthMinutes / 60) * hourlyRate + monthAiCost,
     sessionMinutes,
     sessionCost: (session: Session) => effectiveSessionCost(session, pricing),
     sessionCostPaygEquivalent: (session: Session) =>

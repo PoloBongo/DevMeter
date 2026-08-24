@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import {
-  filterSessions,
   getProjectDetail,
   groupSessionsByDay,
   parseModelBreakdown,
@@ -30,14 +29,14 @@ export default async function ProjectDetailPage({
   const { projectId } = await params;
   const { range, q, page } = await searchParams;
 
-  const detail = await getProjectDetail(session!.user.id, projectId);
-  if (!detail) notFound();
-
   const normalizedRange = range === "7" || range === "all" ? range : "30";
-  const filtered = filterSessions(detail.project.sessions, {
+  const detail = await getProjectDetail(session!.user.id, projectId, {
     range: normalizedRange,
     q,
   });
+  if (!detail) notFound();
+
+  const filtered = detail.project.sessions;
 
   const rangeLabel =
     normalizedRange === "7"

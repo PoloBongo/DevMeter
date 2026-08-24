@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { filterSessions, getProjectDetail, sessionMinutes } from "@/lib/queries";
+import { getProjectDetail, sessionMinutes } from "@/lib/queries";
 
 function csvEscape(value: string): string {
   if (/[",\n]/.test(value)) {
@@ -19,20 +19,20 @@ export async function GET(
   }
 
   const { projectId } = await ctx.params;
-  const detail = await getProjectDetail(session.user.id, projectId);
-  if (!detail) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-
   const url = new URL(request.url);
   const range = url.searchParams.get("range");
   const q = url.searchParams.get("q") ?? undefined;
   const normalizedRange = range === "7" || range === "all" ? range : "30";
 
-  const filtered = filterSessions(detail.project.sessions, {
+  const detail = await getProjectDetail(session.user.id, projectId, {
     range: normalizedRange,
     q,
   });
+  if (!detail) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const filtered = detail.project.sessions;
 
   const header = [
     "date",

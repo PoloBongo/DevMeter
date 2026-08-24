@@ -1,0 +1,55 @@
+name: Publish devmeter-cli
+
+# Auto-publishes collector/ to npm as `devmeter-cli` whenever main changes
+# under collector/** *and* collector/package.json's version doesn't match
+# what's already on npm. So: touch the CLI, bump the version, push — the
+# actual `npm publish` is automatic. Push without a version bump and the
+# workflow runs (typecheck + test) but skips publishing.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "collector/**"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: collector
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+
+      - run: npm install
+
+      - run: npm run typecheck
+
+      - run: npm test
+
+      - name: Check whether package.json's version is already published
+        id: version-check
+        run: |
+          LOCAL_VERSION=$(node -p "require('./package.json').version")
+          PUBLISHED_VERSION=$(npm view devmeter-cli version 2>/dev/null || echo "none")
+          echo "Local: $LOCAL_VERSION / published: $PUBLISHED_VERSION"
+          if [ "$LOCAL_VERSION" != "$PUBLISHED_VERSION" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to npm
+        if: steps.version-check.outputs.changed == 'true'
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

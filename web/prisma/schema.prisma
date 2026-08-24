@@ -96,7 +96,9 @@ model Session {
   importBatchId       String?
   createdAt           DateTime  @default(now())
 
-  @@index([projectId])
+  // Composite index covers plain projectId lookups too (leftmost prefix),
+  // so it replaces the old standalone @@index([projectId]).
+  @@index([projectId, startedAt])
   @@index([startedAt])
   @@index([importBatchId])
 }
