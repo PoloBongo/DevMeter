@@ -1,5 +1,8 @@
 # DevMeter
 
+[![devmeter-cli on npm](https://img.shields.io/npm/v/devmeter-cli?color=cb3837&logo=npm&label=devmeter-cli)](https://www.npmjs.com/package/devmeter-cli)
+[![npm downloads](https://img.shields.io/npm/dm/devmeter-cli?color=cb3837&logo=npm)](https://www.npmjs.com/package/devmeter-cli)
+
 Tracks time and Claude Code AI cost per ticket/project for freelancers and
 small agencies, so you know what a mission really cost.
 
