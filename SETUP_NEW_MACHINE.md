@@ -17,7 +17,8 @@ account at https://devmeter-pi.vercel.app. Do this:
 4. Ask me for my DevMeter API key (from https://devmeter-pi.vercel.app →
    Settings → Local collector — I'll generate one there if I don't have
    it), then run:
-   `devmeter login <key> --api-url https://devmeter-pi.vercel.app`
+   `devmeter login <key>` (it targets https://devmeter-pi.vercel.app by
+   default — no `--api-url` needed)
 5. Set up a shell alias so plain `claude` transparently routes through
    `devmeter claude` (which tags each session with its real directory so
    tokens land on the right project):

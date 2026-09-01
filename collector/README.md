@@ -15,10 +15,15 @@ Requires Node.js 22.6+ (24 recommended).
 ## Setup
 
 ```bash
-devmeter login <api_key> --api-url https://<your-deployment>.vercel.app
+devmeter login <api_key>
 ```
 
-Get `<api_key>` from your DevMeter dashboard → Settings → Local collector.
+Get `<api_key>` from your [DevMeter dashboard](https://devmeter-pi.vercel.app)
+→ Settings → Local collector.
+
+Pass `--api-url <url>` (or set `DEVMETER_API_URL`) only if you're pointing at
+your own DevMeter deployment or a local dev server; it defaults to
+`https://devmeter-pi.vercel.app`.
 
 ## Usage
 

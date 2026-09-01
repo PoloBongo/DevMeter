@@ -27,7 +27,7 @@ program
   .option(
     "--api-url <url>",
     "DevMeter API base URL",
-    process.env.DEVMETER_API_URL ?? "http://localhost:3000"
+    process.env.DEVMETER_API_URL ?? "https://devmeter-pi.vercel.app"
   )
   .action((apiKey: string, options: { apiUrl: string }) => {
     loginCommand(apiKey, options.apiUrl);

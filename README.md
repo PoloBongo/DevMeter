@@ -70,8 +70,12 @@ no repo clone needed:
 
 ```bash
 npm install -g devmeter-cli
-devmeter login <api_key> --api-url https://<your-deployment>.vercel.app
+devmeter login <api_key>
 ```
+
+`devmeter login` targets `https://devmeter-pi.vercel.app` by default; pass
+`--api-url <url>` (or set `DEVMETER_API_URL`) to point at your own deployment
+or a local dev server.
 
 ### Recommended: `devmeter claude`
 
